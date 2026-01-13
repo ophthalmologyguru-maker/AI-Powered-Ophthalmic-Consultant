@@ -18,10 +18,10 @@ st.set_page_config(
 st.markdown("""
 <style>
 .block-container {
-    padding: 1rem;
-    max-width: 100%;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
 }
-/* Hides the 'deploy' button and hamburger menu for cleaner look */
+/* Hides Streamlit branding for a cleaner app look */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
@@ -34,53 +34,55 @@ header {visibility: hidden;}
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
 }
-/* Highlighting the disclaimer to ensure visibility */
-.stAlert {
-    font-weight: 600;
-}
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# API KEY
+# API KEY CHECK
 # =========================================================
 try:
     api_key = st.secrets["GROQ_API_KEY"]
 except KeyError:
-    st.error("GROQ_API_KEY not found in Streamlit secrets.")
+    st.error("GROQ_API_KEY not found. Please check your Streamlit Secrets.")
     st.stop()
 
 client = Groq(api_key=api_key)
 
 # =========================================================
-# HEADER
+# TOP LAYOUT (Title Left | Disclaimer Right)
 # =========================================================
-st.title("👁️ Masood Alam Eye Diagnostics")
-st.markdown("**AI-Powered Ophthalmic Consultant**")
+# This creates a 60% / 40% split on PC. On Mobile, they stack.
+col_header, col_disclaimer = st.columns([1.5, 1])
 
-# =========================================================
-# SIDEBAR
-# =========================================================
-with st.sidebar:
-    # --- PROMINENT DISCLAIMER ---
+with col_header:
+    st.title("👁️ Masood Alam Eye Diagnostics")
+    st.markdown("### **AI-Powered Ophthalmic Consultant**")
+    st.write("Upload diagnostic scans for instant AI-assisted analysis.")
+
+with col_disclaimer:
     st.warning(
         """
         ⚠️ **AI MEDICAL DISCLAIMER**
         
-        This application uses artificial intelligence to assist in the interpretation of ophthalmic images.
-        
-        The output is for **educational and clinical support purposes only** and **does not constitute a medical diagnosis, clinical decision, or treatment recommendation.**
-        
-        All results must be interpreted by a **qualified ophthalmologist** in conjunction with clinical examination, patient history, and other relevant investigations.
-        
-        **This tool does not replace professional medical judgment.**
+        This tool is for **educational and clinical support only**. 
+        It does **not** replace professional medical judgment. 
+        **Verify all findings with clinical examination.**
         """
     )
-    
-    st.header("Imaging Modality")
 
-    modality = st.radio(
-        "Select modality",
+st.divider()
+
+# =========================================================
+# INPUT SECTION (Moved out of Sidebar)
+# =========================================================
+st.markdown("#### ⚙️ Case Configuration")
+
+# Using columns for inputs to keep the UI compact
+col_input1, col_input2 = st.columns(2)
+
+with col_input1:
+    modality = st.selectbox(
+        "Select Imaging Modality",
         [
             "OCT Macula",
             "OCT ONH (Glaucoma)",
@@ -92,17 +94,10 @@ with st.sidebar:
         ]
     )
 
+with col_input2:
     report_style = st.selectbox(
-        "Reporting style",
+        "Reporting Style",
         ["Consultant Clinical Report", "Exam-Oriented (FCPS / MRCOphth)"]
-    )
-
-    st.divider()
-    st.info(
-        "**Instructions:**\n"
-        "1. Acknowledge the disclaimer below.\n"
-        "2. Select the correct modality.\n"
-        "3. Tap 'Browse files' to upload."
     )
 
 # =========================================================
@@ -174,20 +169,17 @@ MODALITY_INSTRUCTIONS = {
 # =========================================================
 st.write(f"### Upload {modality} Scan")
 
-st.info("ℹ️ **Note:** Tap **'Browse files'** to upload an image from your **Device** (Android, iPhone, PC, Mac, or Linux).") 
+# Simple, clean uploader
+image_file = st.file_uploader("Tap to browse or take a photo", type=["jpg", "jpeg", "png"])
 
 # --- MANDATORY ACKNOWLEDGEMENT ---
-acknowledgement = st.checkbox(
-    "✅ I acknowledge that this tool is for educational/support purposes only and does not replace professional medical judgment."
-)
+# We use a container to visually group the action button with the disclaimer check
+with st.container():
+    acknowledgement = st.checkbox(
+        "✅ I certify that I have read the disclaimer and this is not a medical diagnosis."
+    )
 
-if not acknowledgement:
-    st.warning("⚠️ You must acknowledge the disclaimer above to upload and analyze scans.")
-else:
-    # Only show uploader if acknowledged
-    image_file = st.file_uploader("Choose an image file", type=["jpg", "jpeg", "png"])
-
-    if image_file:
+    if image_file and acknowledgement:
         # Show preview
         st.image(image_file, caption="Scan Preview", width=300)
         
@@ -220,8 +212,9 @@ else:
                         }
                     ]
 
+                    # Using Vision Model
                     response = client.chat.completions.create(
-                        model="meta-llama/llama-4-scout-17b-16e-instruct",
+                        model="meta-llama/llama-3.2-90b-vision-preview",
                         messages=messages,
                         temperature=0.1
                     )
@@ -230,16 +223,18 @@ else:
                     st.markdown("<div class='report-title'>📋 Clinical Report</div>", unsafe_allow_html=True)
                     st.markdown(response.choices[0].message.content)
                     
-                    # Disclaimer
-                    st.warning("⚠️ AI-Generated Report. Verify all findings clinically.")
+                    st.success("Analysis Complete. Please correlate clinically.")
 
                 except Exception as e:
                     st.error(f"Analysis Error: {e}")
+
+    elif image_file and not acknowledgement:
+        st.info("👆 Please check the box above to proceed with analysis.")
 
 # =========================================================
 # FOOTER
 # =========================================================
 st.markdown(
-    "<hr><center><small>Masood Alam Eye Diagnostics | AI Clinical Support Tool</small></center>",
+    "<br><hr><center><small>Masood Alam Eye Diagnostics | AI Clinical Support Tool</small></center>",
     unsafe_allow_html=True
 )
