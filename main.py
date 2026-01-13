@@ -4,75 +4,76 @@ from groq import Groq
 from PyPDF2 import PdfReader
 
 # =========================================================
-# PAGE CONFIGURATION
+# PAGE CONFIGURATION (Mobile App Mode)
 # =========================================================
 st.set_page_config(
     page_title="Masood Alam Eye Diagnostics",
-    layout="centered",  # Changed to centered for better mobile app look
+    layout="centered",
     page_icon="👁️"
 )
 
 # =========================================================
-# STYLING (Mobile App Look)
+# STYLING (Hiding Menus for App Feel)
 # =========================================================
 st.markdown("""
 <style>
+/* Adjust padding for mobile screens */
 .block-container {
     padding-top: 2rem;
     padding-bottom: 5rem;
 }
-/* Hide default elements for app-like feel */
+/* Hide Streamlit default menus */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
 
-/* Custom Title Style */
+/* Custom Title */
 h1 {
     text-align: center;
-    font-size: 2rem !important;
+    font-size: 1.8rem !important;
     color: #0e1117;
 }
 
-/* Disclaimer Box Styling */
+/* Disclaimer Box */
 .stAlert {
     border: 2px solid #ff4b4b;
     border-radius: 10px;
+    font-size: 0.9rem;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# API KEY
+# API KEY SETUP
 # =========================================================
 try:
     api_key = st.secrets["GROQ_API_KEY"]
 except KeyError:
-    st.error("GROQ_API_KEY not found. Please add it to Secrets.")
+    st.error("GROQ_API_KEY not found. Please add it to Streamlit Secrets.")
     st.stop()
 
 client = Groq(api_key=api_key)
 
 # =========================================================
-# MAIN APP INTERFACE
+# MAIN INTERFACE
 # =========================================================
-# 1. Title
 st.title("👁️ Masood Alam Eye Diagnostics")
-st.markdown("<p style='text-align: center; color: grey;'>AI-Powered Ophthalmic Consultant</p>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center; color: grey; margin-bottom: 20px;'>AI-Powered Ophthalmic Consultant</div>", unsafe_allow_html=True)
 
-# 2. Disclaimer (Now in Main Body, NOT Sidebar)
+# --- 1. DISCLAIMER (Top of Screen) ---
 st.warning(
     """
     ⚠️ **AI MEDICAL DISCLAIMER**
     
     This tool is for **educational support only** and does not constitute a medical diagnosis. 
-    Verify all findings with clinical examination.
+    **Always verify findings with clinical examination.**
     """
 )
 
-# 3. Modality Selection (Main Body)
+# --- 2. MODALITY SELECTION (Main Body) ---
 st.write("### 1. Select Imaging Type")
 modality = st.radio(
-    "Choose modality:",
+    "Tap to select:",
     [
         "OCT Macula",
         "OCT ONH (Glaucoma)",
@@ -85,14 +86,14 @@ modality = st.radio(
     index=0
 )
 
-# 4. Style Selection
+# --- 3. STYLE SELECTION ---
 report_style = st.selectbox(
     "Report Style:",
     ["Consultant Clinical Report", "Exam-Oriented (FCPS / MRCOphth)"]
 )
 
 # =========================================================
-# SYSTEM PROMPTS & INSTRUCTIONS
+# LOGIC & PROMPTS
 # =========================================================
 SYSTEM_PROMPT = """
 You are an expert Consultant Ophthalmologist (Dr. Masood Alam Shah).
@@ -143,17 +144,18 @@ def load_reference_text(path="REFERNCE.pdf"):
 st.divider()
 st.write(f"### 2. Upload {modality} Scan")
 
-# Mandatory Checkbox
-acknowledgement = st.checkbox("✅ I accept the medical disclaimer.")
+# Mandatory Acknowledgement Checkbox
+ack = st.checkbox("✅ I acknowledge the disclaimer above.")
 
-if acknowledgement:
+if ack:
     image_file = st.file_uploader("Tap to select image", type=["jpg", "jpeg", "png"])
 
     if image_file:
-        st.image(image_file, caption="Preview", use_column_width=True)
+        st.image(image_file, caption="Scan Preview", use_container_width=True)
         
         if st.button("Analyze Scan", type="primary", use_container_width=True):
             with st.spinner("Dr. Masood's AI is analyzing..."):
+                # --- ERROR HANDLING STARTS HERE ---
                 try:
                     encoded_image = encode_image(image_file)
                     reference_text = load_reference_text()
@@ -176,14 +178,21 @@ if acknowledgement:
                         }
                     ]
 
-                    # --- FIXED MODEL NAME ---
+                    # Call Groq API (Correct Model Name)
                     response = client.chat.completions.create(
                         model="llama-3.2-90b-vision-preview",
                         messages=messages,
                         temperature=0.1
                     )
 
+                    # Display Result
                     st.success("Analysis Complete")
                     st.markdown("### 📋 Clinical Report")
                     st.markdown(response.choices[0].message.content)
                     st.warning("Verify findings clinically.")
+
+                except Exception as e:
+                    st.error(f"Analysis Error: {e}")
+                # --- ERROR HANDLING ENDS HERE ---
+else:
+    st.info("Please accept the disclaimer to proceed.")
