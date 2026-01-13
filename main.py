@@ -4,7 +4,7 @@ from groq import Groq
 from PyPDF2 import PdfReader
 
 # =========================================================
-# PAGE CONFIGURATION (Mobile App Mode)
+# 1. PAGE CONFIGURATION (Mobile App Mode)
 # =========================================================
 st.set_page_config(
     page_title="Masood Alam Eye Diagnostics",
@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# STYLING (Hiding Menus for App Feel)
+# 2. STYLING (Clean Mobile Look)
 # =========================================================
 st.markdown("""
 <style>
@@ -40,11 +40,19 @@ h1 {
     border-radius: 10px;
     font-size: 0.9rem;
 }
+
+/* Button Styling */
+div.stButton > button {
+    width: 100%;
+    border-radius: 10px;
+    height: 3em;
+    font-weight: bold;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# API KEY SETUP
+# 3. API KEY SETUP
 # =========================================================
 try:
     api_key = st.secrets["GROQ_API_KEY"]
@@ -55,12 +63,12 @@ except KeyError:
 client = Groq(api_key=api_key)
 
 # =========================================================
-# MAIN INTERFACE
+# 4. MAIN INTERFACE
 # =========================================================
 st.title("👁️ Masood Alam Eye Diagnostics")
 st.markdown("<div style='text-align: center; color: grey; margin-bottom: 20px;'>AI-Powered Ophthalmic Consultant</div>", unsafe_allow_html=True)
 
-# --- 1. DISCLAIMER (Top of Screen) ---
+# --- DISCLAIMER (Top of Screen) ---
 st.warning(
     """
     ⚠️ **AI MEDICAL DISCLAIMER**
@@ -70,7 +78,7 @@ st.warning(
     """
 )
 
-# --- 2. MODALITY SELECTION (Main Body) ---
+# --- MODALITY SELECTION (Main Body) ---
 st.write("### 1. Select Imaging Type")
 modality = st.radio(
     "Tap to select:",
@@ -86,32 +94,26 @@ modality = st.radio(
     index=0
 )
 
-# --- 3. STYLE SELECTION ---
-report_style = st.selectbox(
-    "Report Style:",
-    ["Consultant Clinical Report", "Exam-Oriented (FCPS / MRCOphth)"]
-)
-
 # =========================================================
-# LOGIC & PROMPTS
+# 5. LOGIC & PROMPTS
 # =========================================================
 SYSTEM_PROMPT = """
 You are an expert Consultant Ophthalmologist (Dr. Masood Alam Shah).
 Your task is to analyze the provided ophthalmic scan and generate a formal clinical report.
 
 STRICT FORMATTING RULES:
-1. HEADLINES MUST BE BOLD AND UPPERCASE.
-2. EXTRACT PATIENT DATA if visible.
-3. NO FLUFF. Start directly with findings.
-4. PROFESSIONAL TONE.
+1. **HEADLINES MUST BE BOLD AND UPPERCASE**.
+2. **EXTRACT PATIENT DATA** if visible (Name, Age, ID).
+3. **NO FLUFF**. Start directly with findings.
+4. **PROFESSIONAL TONE** (Consultant level).
 
 REQUIRED OUTPUT STRUCTURE:
 **PATIENT DATA:** [Name, ID, Age - if visible]
-**SCAN QUALITY:** [Signal, Artifacts]
-**KEY FINDINGS:** [Bulleted list]
-**QUANTITATIVE ANALYSIS:** [Numbers/Thickness/Indices]
-**CLINICAL IMPRESSION:** [Diagnosis]
-**MANAGEMENT SUGGESTIONS:** [Next steps]
+**SCAN QUALITY:** [Signal strength, Artifacts, Centration]
+**KEY FINDINGS:** [Bulleted list of anatomical/pathological findings]
+**QUANTITATIVE ANALYSIS:** [Thickness values, indices, C/D ratio, etc.]
+**CLINICAL IMPRESSION:** [Concise diagnostic summary]
+**MANAGEMENT SUGGESTIONS:** [Recommendations for further investigation or treatment]
 """
 
 MODALITY_INSTRUCTIONS = {
@@ -139,7 +141,7 @@ def load_reference_text(path="REFERNCE.pdf"):
         return ""
 
 # =========================================================
-# UPLOAD & ANALYZE
+# 6. UPLOAD & ANALYZE (Fixed Error Handling)
 # =========================================================
 st.divider()
 st.write(f"### 2. Upload {modality} Scan")
@@ -155,7 +157,7 @@ if ack:
         
         if st.button("Analyze Scan", type="primary", use_container_width=True):
             with st.spinner("Dr. Masood's AI is analyzing..."):
-                # --- ERROR HANDLING STARTS HERE ---
+                # --- START OF ERROR HANDLING BLOCK ---
                 try:
                     encoded_image = encode_image(image_file)
                     reference_text = load_reference_text()
@@ -178,7 +180,7 @@ if ack:
                         }
                     ]
 
-                    # Call Groq API (Correct Model Name)
+                    # Call Groq API
                     response = client.chat.completions.create(
                         model="llama-3.2-90b-vision-preview",
                         messages=messages,
@@ -189,10 +191,10 @@ if ack:
                     st.success("Analysis Complete")
                     st.markdown("### 📋 Clinical Report")
                     st.markdown(response.choices[0].message.content)
-                    st.warning("Verify findings clinically.")
+                    st.warning("Verify all findings clinically.")
 
                 except Exception as e:
                     st.error(f"Analysis Error: {e}")
-                # --- ERROR HANDLING ENDS HERE ---
+                # --- END OF ERROR HANDLING BLOCK ---
 else:
     st.info("Please accept the disclaimer to proceed.")
