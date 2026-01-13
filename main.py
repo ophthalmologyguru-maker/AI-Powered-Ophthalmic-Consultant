@@ -8,35 +8,35 @@ from PyPDF2 import PdfReader
 # =========================================================
 st.set_page_config(
     page_title="Masood Alam Eye Diagnostics",
-    layout="wide",
+    layout="centered",  # Changed to centered for better mobile app look
     page_icon="👁️"
 )
 
 # =========================================================
-# STYLING
+# STYLING (Mobile App Look)
 # =========================================================
 st.markdown("""
 <style>
 .block-container {
-    padding: 1rem;
-    max-width: 100%;
+    padding-top: 2rem;
+    padding-bottom: 5rem;
 }
-/* Hides the 'deploy' button and hamburger menu for cleaner look */
+/* Hide default elements for app-like feel */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
 
-.report-title {
-    font-size: 1.5rem;
-    font-weight: 800;
+/* Custom Title Style */
+h1 {
+    text-align: center;
+    font-size: 2rem !important;
     color: #0e1117;
-    border-bottom: 3px solid #ff4b4b;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
 }
-/* Highlighting the disclaimer to ensure visibility */
+
+/* Disclaimer Box Styling */
 .stAlert {
-    font-weight: 600;
+    border: 2px solid #ff4b4b;
+    border-radius: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -47,67 +47,82 @@ header {visibility: hidden;}
 try:
     api_key = st.secrets["GROQ_API_KEY"]
 except KeyError:
-    st.error("GROQ_API_KEY not found in Streamlit secrets.")
+    st.error("GROQ_API_KEY not found. Please add it to Secrets.")
     st.stop()
 
 client = Groq(api_key=api_key)
 
 # =========================================================
-# HEADER
+# MAIN APP INTERFACE
 # =========================================================
+# 1. Title
 st.title("👁️ Masood Alam Eye Diagnostics")
-st.markdown("**AI-Powered Ophthalmic Consultant**")
+st.markdown("<p style='text-align: center; color: grey;'>AI-Powered Ophthalmic Consultant</p>", unsafe_allow_html=True)
 
-# =========================================================
-# SIDEBAR
-# =========================================================
-with st.sidebar:
-    # --- PROMINENT DISCLAIMER ---
-    st.warning(
-        """
-        ⚠️ **AI MEDICAL DISCLAIMER**
-        
-        This application uses artificial intelligence to assist in the interpretation of ophthalmic images.
-        
-        The output is for **educational and clinical support purposes only** and **does not constitute a medical diagnosis, clinical decision, or treatment recommendation.**
-        
-        All results must be interpreted by a **qualified ophthalmologist** in conjunction with clinical examination, patient history, and other relevant investigations.
-        
-        **This tool does not replace professional medical judgment.**
-        """
-    )
+# 2. Disclaimer (Now in Main Body, NOT Sidebar)
+st.warning(
+    """
+    ⚠️ **AI MEDICAL DISCLAIMER**
     
-    st.header("Imaging Modality")
+    This tool is for **educational support only** and does not constitute a medical diagnosis. 
+    Verify all findings with clinical examination.
+    """
+)
 
-    modality = st.radio(
-        "Select modality",
-        [
-            "OCT Macula",
-            "OCT ONH (Glaucoma)",
-            "Visual Field (Perimetry)",
-            "Corneal Topography",
-            "Fluorescein Angiography (FFA)",
-            "OCT Angiography (OCTA)",
-            "Ultrasound B-Scan"
-        ]
-    )
+# 3. Modality Selection (Main Body)
+st.write("### 1. Select Imaging Type")
+modality = st.radio(
+    "Choose modality:",
+    [
+        "OCT Macula",
+        "OCT ONH (Glaucoma)",
+        "Visual Field (Perimetry)",
+        "Corneal Topography",
+        "Fluorescein Angiography (FFA)",
+        "OCT Angiography (OCTA)",
+        "Ultrasound B-Scan"
+    ],
+    index=0
+)
 
-    report_style = st.selectbox(
-        "Reporting style",
-        ["Consultant Clinical Report", "Exam-Oriented (FCPS / MRCOphth)"]
-    )
-
-    st.divider()
-    st.info(
-        "**Instructions:**\n"
-        "1. Acknowledge the disclaimer below.\n"
-        "2. Select the correct modality.\n"
-        "3. Tap 'Browse files' to upload."
-    )
+# 4. Style Selection
+report_style = st.selectbox(
+    "Report Style:",
+    ["Consultant Clinical Report", "Exam-Oriented (FCPS / MRCOphth)"]
+)
 
 # =========================================================
-# HELPER FUNCTIONS
+# SYSTEM PROMPTS & INSTRUCTIONS
 # =========================================================
+SYSTEM_PROMPT = """
+You are an expert Consultant Ophthalmologist (Dr. Masood Alam Shah).
+Your task is to analyze the provided ophthalmic scan and generate a formal clinical report.
+
+STRICT FORMATTING RULES:
+1. HEADLINES MUST BE BOLD AND UPPERCASE.
+2. EXTRACT PATIENT DATA if visible.
+3. NO FLUFF. Start directly with findings.
+4. PROFESSIONAL TONE.
+
+REQUIRED OUTPUT STRUCTURE:
+**PATIENT DATA:** [Name, ID, Age - if visible]
+**SCAN QUALITY:** [Signal, Artifacts]
+**KEY FINDINGS:** [Bulleted list]
+**QUANTITATIVE ANALYSIS:** [Numbers/Thickness/Indices]
+**CLINICAL IMPRESSION:** [Diagnosis]
+**MANAGEMENT SUGGESTIONS:** [Next steps]
+"""
+
+MODALITY_INSTRUCTIONS = {
+    "OCT Macula": "Focus on: CSMT, Retinal Layers (ILM, ELM, IS/OS), Fluid (IRF/SRF), and RPE status.",
+    "OCT ONH (Glaucoma)": "Focus on: RNFL Thickness (Average & Quadrants), Cup-to-Disc Ratio, and ISNT rule.",
+    "Visual Field (Perimetry)": "Focus on: Reliability indices, GHT, Mean Deviation (MD), PSD, and defect patterns.",
+    "Corneal Topography": "Focus on: K-max, Thinnest Pachymetry, and Anterior/Posterior Elevation maps.",
+    "Fluorescein Angiography (FFA)": "Focus on: Phases, Leakage, Staining, Pooling, and Ischemia.",
+    "OCT Angiography (OCTA)": "Focus on: Vascular density, FAZ size, and Neovascular networks.",
+    "Ultrasound B-Scan": "Focus on: Retinal attachment, Vitreous echoes, and Mass lesions."
+}
+
 def encode_image(file):
     return base64.b64encode(file.getvalue()).decode("utf-8")
 
@@ -123,86 +138,27 @@ def load_reference_text(path="REFERNCE.pdf"):
         return ""
 
 # =========================================================
-# SYSTEM PROMPT
+# UPLOAD & ANALYZE
 # =========================================================
-SYSTEM_PROMPT = """
-You are an expert Consultant Ophthalmologist (Dr. Masood Alam Shah).
-Your task is to analyze the provided ophthalmic scan and generate a formal clinical report.
+st.divider()
+st.write(f"### 2. Upload {modality} Scan")
 
-STRICT FORMATTING RULES:
-1. **HEADLINES MUST BE BOLD AND UPPERCASE** (e.g., **SCAN QUALITY:**).
-2. **EXTRACT PATIENT DATA**: You MUST look for Patient Name, ID, DOB, and Age in the image. If found, list them at the top.
-3. **NO FLUFF**: Do not use phrases like "Step 1" or "The image shows". Start directly with the findings.
-4. **PROFESSIONAL TONE**: Use precise medical terminology.
+# Mandatory Checkbox
+acknowledgement = st.checkbox("✅ I accept the medical disclaimer.")
 
-REQUIRED OUTPUT STRUCTURE:
-
-**PATIENT DATA:**
-- Name: [Extract or "Not Visible"]
-- ID: [Extract or "Not Visible"]
-- Age/DOB: [Extract or "Not Visible"]
-- Date of Scan: [Extract or "Not Visible"]
-
-**SCAN QUALITY:**
-(Assess signal strength, centration, and artifacts)
-
-**KEY FINDINGS:**
-(Bulleted list of specific anatomical and pathological findings)
-
-**QUANTITATIVE ANALYSIS:**
-(Extract specific numbers if visible: e.g., RNFL thickness, CSMT, C/D Ratio, MD, PSD)
-
-**CLINICAL IMPRESSION:**
-(A concise, probability-based diagnostic summary)
-
-**MANAGEMENT SUGGESTIONS:**
-(Brief recommendations for follow-up or further testing)
-"""
-
-MODALITY_INSTRUCTIONS = {
-    "OCT Macula": "Focus on: CSMT, Retinal Layers (ILM, ELM, IS/OS), Fluid (IRF/SRF), and RPE status.",
-    "OCT ONH (Glaucoma)": "Focus on: RNFL Thickness (Average & Quadrants), Cup-to-Disc Ratio, and ISNT rule.",
-    "Visual Field (Perimetry)": "Focus on: Reliability indices, GHT, Mean Deviation (MD), PSD, and defect patterns (Arcuate/Nasal Step).",
-    "Corneal Topography": "Focus on: K-max, Thinnest Pachymetry, and Anterior/Posterior Elevation maps.",
-    "Fluorescein Angiography (FFA)": "Focus on: Phases (Arterial/Venous), Leakage vs Staining vs Pooling, and Ischemia.",
-    "OCT Angiography (OCTA)": "Focus on: Vascular density, FAZ size, and Neovascular networks.",
-    "Ultrasound B-Scan": "Focus on: Retinal attachment, Vitreous echoes (Hemorrhage), and Mass lesions."
-}
-
-# =========================================================
-# MAIN APP LOGIC
-# =========================================================
-st.write(f"### Upload {modality} Scan")
-
-st.info("ℹ️ **Note:** Tap **'Browse files'** to upload an image from your **Device** (Android, iPhone, PC, Mac, or Linux).") 
-
-# --- MANDATORY ACKNOWLEDGEMENT ---
-acknowledgement = st.checkbox(
-    "✅ I acknowledge that this tool is for educational/support purposes only and does not replace professional medical judgment."
-)
-
-if not acknowledgement:
-    st.warning("⚠️ You must acknowledge the disclaimer above to upload and analyze scans.")
-else:
-    # Only show uploader if acknowledged
-    image_file = st.file_uploader("Choose an image file", type=["jpg", "jpeg", "png"])
+if acknowledgement:
+    image_file = st.file_uploader("Tap to select image", type=["jpg", "jpeg", "png"])
 
     if image_file:
-        # Show preview
-        st.image(image_file, caption="Scan Preview", width=300)
+        st.image(image_file, caption="Preview", use_column_width=True)
         
-        # Analyze Button
-        if st.button("Analyze Scan", type="primary"):
+        if st.button("Analyze Scan", type="primary", use_container_width=True):
             with st.spinner("Dr. Masood's AI is analyzing..."):
                 try:
                     encoded_image = encode_image(image_file)
                     reference_text = load_reference_text()
-
-                    user_prompt = f"""
-                    MODALITY: {modality}
-                    CONTEXT: {MODALITY_INSTRUCTIONS[modality]}
-                    REFERENCE DATA: {reference_text}
-                    """
+                    
+                    user_prompt = f"MODALITY: {modality}\nCONTEXT: {MODALITY_INSTRUCTIONS[modality]}\nREF: {reference_text}"
 
                     messages = [
                         {"role": "system", "content": SYSTEM_PROMPT},
@@ -220,27 +176,14 @@ else:
                         }
                     ]
 
-                    # --- FIXED MODEL NAME HERE ---
+                    # --- FIXED MODEL NAME ---
                     response = client.chat.completions.create(
                         model="llama-3.2-90b-vision-preview",
                         messages=messages,
                         temperature=0.1
                     )
 
-                    # Output
-                    st.markdown("<div class='report-title'>📋 Clinical Report</div>", unsafe_allow_html=True)
+                    st.success("Analysis Complete")
+                    st.markdown("### 📋 Clinical Report")
                     st.markdown(response.choices[0].message.content)
-                    
-                    # Disclaimer
-                    st.warning("⚠️ AI-Generated Report. Verify all findings clinically.")
-
-                except Exception as e:
-                    st.error(f"Analysis Error: {e}")
-
-# =========================================================
-# FOOTER
-# =========================================================
-st.markdown(
-    "<hr><center><small>Masood Alam Eye Diagnostics | AI Clinical Support Tool</small></center>",
-    unsafe_allow_html=True
-)
+                    st.warning("Verify findings clinically.")
