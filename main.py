@@ -116,5 +116,83 @@ REQUIRED OUTPUT STRUCTURE:
 **MANAGEMENT SUGGESTIONS:** [Recommendations for further investigation or treatment]
 """
 
+# NOTE: Using triple quotes here to prevent SyntaxError if lines wrap
 MODALITY_INSTRUCTIONS = {
-    "OCT Macula": "Focus on: CSMT, Retinal Layers (ILM, ELM
+    "OCT Macula": """Focus on: CSMT, Retinal Layers (ILM, ELM, IS/OS), Fluid (IRF/SRF), and RPE status.""",
+    "OCT ONH (Glaucoma)": """Focus on: RNFL Thickness (Average & Quadrants), Cup-to-Disc Ratio, and ISNT rule.""",
+    "Visual Field (Perimetry)": """Focus on: Reliability indices, GHT, Mean Deviation (MD), PSD, and defect patterns.""",
+    "Corneal Topography": """Focus on: K-max, Thinnest Pachymetry, and Anterior/Posterior Elevation maps.""",
+    "Fluorescein Angiography (FFA)": """Focus on: Phases, Leakage, Staining, Pooling, and Ischemia.""",
+    "OCT Angiography (OCTA)": """Focus on: Vascular density, FAZ size, and Neovascular networks.""",
+    "Ultrasound B-Scan": """Focus on: Retinal attachment, Vitreous echoes, and Mass lesions."""
+}
+
+def encode_image(file):
+    return base64.b64encode(file.getvalue()).decode("utf-8")
+
+def load_reference_text(path="REFERNCE.pdf"):
+    try:
+        reader = PdfReader(path)
+        text = ""
+        for i, page in enumerate(reader.pages):
+            if i > 50: break
+            text += page.extract_text() or ""
+        return text[:5000]
+    except:
+        return ""
+
+# =========================================================
+# 6. UPLOAD & ANALYZE
+# =========================================================
+st.divider()
+st.write(f"### 2. Upload {modality} Scan")
+
+# Mandatory Acknowledgement Checkbox
+ack = st.checkbox("✅ I acknowledge the disclaimer above.")
+
+if ack:
+    image_file = st.file_uploader("Tap to select image", type=["jpg", "jpeg", "png"])
+
+    if image_file:
+        st.image(image_file, caption="Scan Preview", use_container_width=True)
+        
+        if st.button("Analyze Scan", type="primary", use_container_width=True):
+            with st.spinner("Dr. Masood's AI is analyzing..."):
+                try:
+                    encoded_image = encode_image(image_file)
+                    reference_text = load_reference_text()
+                    
+                    user_prompt = f"MODALITY: {modality}\nCONTEXT: {MODALITY_INSTRUCTIONS[modality]}\nREF: {reference_text}"
+
+                    messages = [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": user_prompt},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{encoded_image}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+
+                    # Call Groq API (Using the 11b model)
+                    response = client.chat.completions.create(
+                        model="llama-3.2-11b-vision-preview",
+                        messages=messages,
+                        temperature=0.1
+                    )
+
+                    st.success("Analysis Complete")
+                    st.markdown("### 📋 Clinical Report")
+                    st.markdown(response.choices[0].message.content)
+                    st.warning("Verify all findings clinically.")
+
+                except Exception as e:
+                    st.error(f"Analysis Error: {e}")
+else:
+    st.info("Please accept the disclaimer to proceed.")
