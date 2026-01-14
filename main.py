@@ -22,26 +22,22 @@ st.markdown("""
     padding-top: 2rem;
     padding-bottom: 5rem;
 }
-/* Hide Streamlit default menus */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
 
-/* Custom Title */
 h1 {
     text-align: center;
     font-size: 1.8rem !important;
     color: #0e1117;
 }
 
-/* Disclaimer Box */
 .stAlert {
     border: 2px solid #ff4b4b;
     border-radius: 10px;
     font-size: 0.9rem;
 }
 
-/* Button Styling */
 div.stButton > button {
     width: 100%;
     border-radius: 10px;
@@ -52,7 +48,7 @@ div.stButton > button {
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 3. API KEY SETUP
+# 3. GROQ API SETUP
 # =========================================================
 try:
     api_key = st.secrets["GROQ_API_KEY"]
@@ -68,7 +64,6 @@ client = Groq(api_key=api_key)
 st.title("👁️ Masood Alam Eye Diagnostics")
 st.markdown("<div style='text-align: center; color: grey; margin-bottom: 20px;'>AI-Powered Ophthalmic Consultant</div>", unsafe_allow_html=True)
 
-# --- DISCLAIMER (Top of Screen) ---
 st.warning(
     """
     ⚠️ **AI MEDICAL DISCLAIMER**
@@ -78,7 +73,6 @@ st.warning(
     """
 )
 
-# --- MODALITY SELECTION (Main Body) ---
 st.write("### 1. Select Imaging Type")
 modality = st.radio(
     "Tap to select:",
@@ -116,7 +110,6 @@ REQUIRED OUTPUT STRUCTURE:
 **MANAGEMENT SUGGESTIONS:** [Recommendations for further investigation or treatment]
 """
 
-# NOTE: Using triple quotes here to prevent SyntaxError if lines wrap
 MODALITY_INSTRUCTIONS = {
     "OCT Macula": """Focus on: CSMT, Retinal Layers (ILM, ELM, IS/OS), Fluid (IRF/SRF), and RPE status.""",
     "OCT ONH (Glaucoma)": """Focus on: RNFL Thickness (Average & Quadrants), Cup-to-Disc Ratio, and ISNT rule.""",
@@ -147,7 +140,6 @@ def load_reference_text(path="REFERNCE.pdf"):
 st.divider()
 st.write(f"### 2. Upload {modality} Scan")
 
-# Mandatory Acknowledgement Checkbox
 ack = st.checkbox("✅ I acknowledge the disclaimer above.")
 
 if ack:
@@ -173,6 +165,7 @@ if ack:
                                 {
                                     "type": "image_url",
                                     "image_url": {
+                                        # Using the Llama 4 Scout Model
                                         "url": f"data:image/jpeg;base64,{encoded_image}"
                                     }
                                 }
@@ -180,9 +173,9 @@ if ack:
                         }
                     ]
 
-                    # Call Groq API (Using the 11b model)
+                    # --- CORRECTED MODEL FOR 2026 ---
                     response = client.chat.completions.create(
-                        model="llama-3.2-11b-vision-preview",
+                        model="meta-llama/llama-4-scout-17b-16e-instruct",
                         messages=messages,
                         temperature=0.1
                     )
