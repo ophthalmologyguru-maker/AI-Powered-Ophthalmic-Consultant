@@ -4,10 +4,10 @@ from groq import Groq
 from PyPDF2 import PdfReader
 
 # =========================================================
-# 1. PAGE CONFIGURATION (Mobile App Mode)
+# 1. PAGE CONFIGURATION
 # =========================================================
 st.set_page_config(
-    page_title="Masood Alam Eye Diagnostics",
+    page_title="Zubaida Eye Diagnostics",
     layout="centered",
     page_icon="👁️"
 )
@@ -22,22 +22,26 @@ st.markdown("""
     padding-top: 2rem;
     padding-bottom: 5rem;
 }
+/* Hide Streamlit default menus */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
 
+/* Custom Title */
 h1 {
     text-align: center;
     font-size: 1.8rem !important;
     color: #0e1117;
 }
 
+/* Disclaimer Box */
 .stAlert {
     border: 2px solid #ff4b4b;
     border-radius: 10px;
     font-size: 0.9rem;
 }
 
+/* Button Styling */
 div.stButton > button {
     width: 100%;
     border-radius: 10px;
@@ -61,7 +65,7 @@ client = Groq(api_key=api_key)
 # =========================================================
 # 4. MAIN INTERFACE
 # =========================================================
-st.title("👁️ Masood Alam Eye Diagnostics")
+st.title("👁️ Zubaida Eye Diagnostics")
 st.markdown("<div style='text-align: center; color: grey; margin-bottom: 20px;'>AI-Powered Ophthalmic Consultant</div>", unsafe_allow_html=True)
 
 st.warning(
@@ -91,8 +95,9 @@ modality = st.radio(
 # =========================================================
 # 5. LOGIC & PROMPTS
 # =========================================================
+# UPDATED: Generic Expert Persona (No Name)
 SYSTEM_PROMPT = """
-You are an expert Consultant Ophthalmologist (Dr. Masood Alam Shah).
+You are an expert Consultant Ophthalmologist.
 Your task is to analyze the provided ophthalmic scan and generate a formal clinical report.
 
 STRICT FORMATTING RULES:
@@ -149,7 +154,8 @@ if ack:
         st.image(image_file, caption="Scan Preview", use_container_width=True)
         
         if st.button("Analyze Scan", type="primary", use_container_width=True):
-            with st.spinner("Dr. Masood's AI is analyzing..."):
+            # UPDATED: Generic Spinner Text
+            with st.spinner("Zubaida AI is analyzing..."):
                 try:
                     encoded_image = encode_image(image_file)
                     reference_text = load_reference_text()
@@ -165,7 +171,6 @@ if ack:
                                 {
                                     "type": "image_url",
                                     "image_url": {
-                                        # Using the Llama 4 Scout Model
                                         "url": f"data:image/jpeg;base64,{encoded_image}"
                                     }
                                 }
@@ -173,7 +178,7 @@ if ack:
                         }
                     ]
 
-                    # --- CORRECTED MODEL FOR 2026 ---
+                    # Using Llama 4 Scout (Current Working Model)
                     response = client.chat.completions.create(
                         model="meta-llama/llama-4-scout-17b-16e-instruct",
                         messages=messages,
