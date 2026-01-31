@@ -11,7 +11,7 @@ from PyPDF2 import PdfReader
 # =========================================================
 st.set_page_config(
     page_title="Masood Alam Shah Eye Diagnostics",
-    layout="centered",
+    layout="wide",  # Changed to wide for side-by-side columns
     page_icon="👁️"
 )
 
@@ -22,7 +22,7 @@ st.markdown("""
 <style>
 /* 1. Mobile Padding Fix */
 .block-container {
-    padding-top: 2rem;
+    padding-top: 1rem;
     padding-bottom: 5rem;
 }
 #MainMenu {visibility: hidden;}
@@ -32,7 +32,7 @@ header {visibility: hidden;}
 /* 2. Custom Title */
 h1 {
     text-align: center;
-    font-size: 1.8rem !important;
+    font-size: 2.2rem !important;
     color: #0e1117;
 }
 
@@ -56,21 +56,25 @@ h1 {
     background-color: #fff8f8;
     padding: 15px;
     text-align: center;
-    font-size: 0.95rem;
+    font-size: 1rem;
     margin-bottom: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 800px;
 }
 
-/* 5. Vibrant Colors for Radio Buttons (Using nth-child to target each option) */
+/* 5. Vibrant Colors for Radio Buttons */
 div[role="radiogroup"] > label > div:first-child {
-    display: none; /* Hide default circle if desired, or keep it */
+    display: none; 
 }
 div[role="radiogroup"] > label {
-    padding: 10px;
+    padding: 12px;
     border-radius: 8px;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     font-weight: bold;
-    color: white; 
+    color: white !important; /* FORCED WHITE TEXT */
     transition: transform 0.1s;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3); /* Shadow for readability */
 }
 div[role="radiogroup"] > label:hover {
     transform: scale(1.02);
@@ -78,12 +82,12 @@ div[role="radiogroup"] > label:hover {
 
 /* Assigning Specific Vibrant Colors to Each Option */
 div[role="radiogroup"] > label:nth-child(1) { background-color: #FF5733; } /* OCT Macula - Red/Orange */
-div[role="radiogroup"] > label:nth-child(2) { background-color: #33FF57; color: #000; } /* OCT ONH - Green */
+div[role="radiogroup"] > label:nth-child(2) { background-color: #33FF57; } /* OCT ONH - Green */
 div[role="radiogroup"] > label:nth-child(3) { background-color: #3357FF; } /* Visual Field - Blue */
 div[role="radiogroup"] > label:nth-child(4) { background-color: #FF33A8; } /* Corneal Topo - Pink */
-div[role="radiogroup"] > label:nth-child(5) { background-color: #FFC300; color: #000; } /* FFA - Yellow */
+div[role="radiogroup"] > label:nth-child(5) { background-color: #FFC300; } /* FFA - Yellow/Gold */
 div[role="radiogroup"] > label:nth-child(6) { background-color: #8E44AD; } /* OCTA - Purple */
-div[role="radiogroup"] > label:nth-child(7) { background-color: #00C3FF; color: #000; } /* B-Scan - Cyan */
+div[role="radiogroup"] > label:nth-child(7) { background-color: #00C3FF; } /* B-Scan - Cyan */
 
 /* 6. Button Styling */
 div.stButton > button {
@@ -109,12 +113,13 @@ except KeyError:
 client = Groq(api_key=api_key)
 
 # =========================================================
-# 4. MAIN INTERFACE
+# 4. MAIN INTERFACE (HEADER)
 # =========================================================
+# TITLE (Removed PK)
 st.title("👁️ Masood Alam Shah Eye Diagnostics 🇵🇰")
 st.markdown("<div style='text-align: center; color: grey; margin-bottom: 20px;'>AI-Powered Ophthalmic Assistant</div>", unsafe_allow_html=True)
 
-# --- UPDATED: Centered Disclaimer with Blinking Icon ---
+# DISCLAIMER
 st.markdown(
     """
     <div class="disclaimer-box">
@@ -130,79 +135,132 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.write("### 1. Select Imaging Type")
-
-# --- UPDATED: Radio Buttons (Colors handled by CSS above) ---
-modality = st.radio(
-    "Tap to select:",
-    [
-        "OCT Macula",
-        "OCT ONH (Glaucoma)",
-        "Visual Field (Perimetry)",
-        "Corneal Topography",
-        "Fluorescein Angiography (FFA)",
-        "OCT Angiography (OCTA)",
-        "Ultrasound B-Scan"
-    ],
-    index=0
-)
+st.divider()
 
 # =========================================================
-# 5. LOGIC & PROMPTS
+# 5. SPLIT LAYOUT (SIDE-BY-SIDE)
 # =========================================================
-SYSTEM_PROMPT = """
-You are an expert Consultant Ophthalmologist.
-Your task is to analyze the provided ophthalmic scan and generate a formal clinical report.
+col1, col2 = st.columns(2, gap="large")
 
-STRICT FORMATTING RULES:
-1. HEADLINES MUST BE BOLD AND UPPERCASE.
-2. EXTRACT PATIENT DATA if visible.
-3. NO FLUFF. Start findings immediately.
-4. PROFESSIONAL TONE.
+with col1:
+    st.write("### 1. Select Imaging Type")
+    modality = st.radio(
+        "Tap to select:",
+        [
+            "OCT Macula",
+            "OCT ONH (Glaucoma)",
+            "Visual Field (Perimetry)",
+            "Corneal Topography",
+            "Fluorescein Angiography (FFA)",
+            "OCT Angiography (OCTA)",
+            "Ultrasound B-Scan"
+        ],
+        index=0
+    )
 
-REQUIRED OUTPUT STRUCTURE:
-**PATIENT DATA:** [Name, ID, Age - if visible]
-**SCAN QUALITY:** [Signal, Artifacts]
-**KEY FINDINGS:** [Bulleted list]
-**QUANTITATIVE ANALYSIS:** [Thickness, Indices]
-**CLINICAL IMPRESSION:** [Diagnosis]
-**MANAGEMENT SUGGESTIONS:** [Next steps]
-"""
+with col2:
+    st.write(f"### 2. Upload {modality} Scan")
+    
+    ack = st.checkbox("✅ I acknowledge the disclaimer above.")
+    
+    if ack:
+        image_file = st.file_uploader("Tap to select image", type=["jpg", "jpeg", "png"])
 
-MODALITY_INSTRUCTIONS = {
-    "OCT Macula": """Focus on: CSMT, Retinal Layers (ILM, ELM, IS/OS), Fluid (IRF/SRF), and RPE status.""",
-    "OCT ONH (Glaucoma)": """Focus on: RNFL Thickness, C/D Ratio, and ISNT rule.""",
-    "Visual Field (Perimetry)": """Focus on: Reliability, GHT, MD, PSD, and defect patterns.""",
-    "Corneal Topography": """Focus on: K-max, Thinnest Pachymetry, and Elevation maps.""",
-    "Fluorescein Angiography (FFA)": """Focus on: Phases, Leakage, Staining, and Ischemia.""",
-    "OCT Angiography (OCTA)": """Focus on: Vascular density, FAZ size, and Neovascular networks.""",
-    "Ultrasound B-Scan": """Focus on: Retinal attachment, Vitreous echoes, and Mass lesions."""
-}
+        if image_file:
+            st.image(image_file, caption="Scan Preview", use_container_width=True)
+            
+            if st.button("Analyze Scan", type="primary", use_container_width=True):
+                # Using Generic Spinner Text
+                with st.spinner("Dr. Masood Alam Shah's AI is analyzing..."):
+                    # --- AI LOGIC (Nested inside the button) ---
+                    # Defining functions here to keep scope clean inside column
+                    
+                    def encode_image(file):
+                        return base64.b64encode(file.getvalue()).decode("utf-8")
 
-def encode_image(file):
-    return base64.b64encode(file.getvalue()).decode("utf-8")
+                    def load_reference_text(path="REFERNCE.pdf"):
+                        try:
+                            reader = PdfReader(path)
+                            text = ""
+                            for i, page in enumerate(reader.pages):
+                                if i > 50: break
+                                text += page.extract_text() or ""
+                            return text[:5000]
+                        except:
+                            return ""
 
-def load_reference_text(path="REFERNCE.pdf"):
-    try:
-        reader = PdfReader(path)
-        text = ""
-        for i, page in enumerate(reader.pages):
-            if i > 50: break
-            text += page.extract_text() or ""
-        return text[:5000]
-    except:
-        return ""
+                    SYSTEM_PROMPT = """
+                    You are an expert Consultant Ophthalmologist.
+                    Analyze the ophthalmic scan professionally.
+                    STRICT FORMATTING:
+                    **PATIENT DATA:** [Name/ID/Age if visible]
+                    **SCAN QUALITY:** [Signal, Artifacts]
+                    **KEY FINDINGS:** [Bulleted list]
+                    **QUANTITATIVE ANALYSIS:** [Thickness, Indices]
+                    **CLINICAL IMPRESSION:** [Diagnosis]
+                    **MANAGEMENT SUGGESTIONS:** [Next steps]
+                    """
+                    
+                    MODALITY_INSTRUCTIONS = {
+                        "OCT Macula": "Focus on: CSMT, Retinal Layers, Fluid, RPE.",
+                        "OCT ONH (Glaucoma)": "Focus on: RNFL, C/D Ratio, ISNT rule.",
+                        "Visual Field (Perimetry)": "Focus on: Reliability, GHT, MD, PSD, Defect pattern.",
+                        "Corneal Topography": "Focus on: K-max, Pachymetry, Elevations.",
+                        "Fluorescein Angiography (FFA)": "Focus on: Phases, Leakage, Ischemia.",
+                        "OCT Angiography (OCTA)": "Focus on: Vascular density, FAZ, Neovascularization.",
+                        "Ultrasound B-Scan": "Focus on: Retinal attachment, Vitreous echoes, Mass."
+                    }
 
+                    try:
+                        encoded_image = encode_image(image_file)
+                        reference_text = load_reference_text()
+                        
+                        user_prompt = f"MODALITY: {modality}\nCONTEXT: {MODALITY_INSTRUCTIONS[modality]}\nREF: {reference_text}"
+
+                        messages = [
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": [
+                                {"type": "text", "text": user_prompt},
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}}
+                            ]}
+                        ]
+
+                        response = client.chat.completions.create(
+                            model="meta-llama/llama-4-scout-17b-16e-instruct",
+                            messages=messages,
+                            temperature=0.1
+                        )
+                        
+                        # Store result in session state to display outside the column if needed, 
+                        # or just display here.
+                        st.session_state['analysis_result'] = response.choices[0].message.content
+                        
+                    except Exception as e:
+                        st.error(f"Analysis Error: {e}")
+    else:
+        st.info("Please accept the disclaimer to proceed.")
+
+# =========================================================
+# 6. DISPLAY RESULTS (Full Width below columns)
+# =========================================================
+if 'analysis_result' in st.session_state:
+    st.divider()
+    st.success("Analysis Complete")
+    st.markdown("### 📋 Clinical Report")
+    st.markdown(st.session_state['analysis_result'])
+    st.warning("Verify all findings clinically.")
+
+# =========================================================
+# 7. FEEDBACK SECTION
+# =========================================================
 def send_feedback_email(user_feedback):
     try:
         msg = MIMEMultipart()
         msg['From'] = email_user
         msg['To'] = "masoodeye16@gmail.com"
         msg['Subject'] = "New Feedback: Eye Diagnostics App"
-
         body = f"User Feedback:\n\n{user_feedback}"
         msg.attach(MIMEText(body, 'plain'))
-
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(email_user, email_pass)
@@ -214,77 +272,6 @@ def send_feedback_email(user_feedback):
         st.error(f"Email Error: {e}")
         return False
 
-# =========================================================
-# 6. UPLOAD & ANALYZE
-# =========================================================
-st.divider()
-st.write(f"### 2. Upload {modality} Scan")
-
-ack = st.checkbox("✅ I acknowledge the disclaimer above.")
-
-if ack:
-    image_file = st.file_uploader("Tap to select image", type=["jpg", "jpeg", "png"])
-
-    if image_file:
-        st.image(image_file, caption="Scan Preview", use_container_width=True)
-        
-        if st.button("Analyze Scan", type="primary", use_container_width=True):
-            with st.spinner("Dr. Masood's AI is analyzing..."):
-                try:
-                    encoded_image = encode_image(image_file)
-                    reference_text = load_reference_text()
-                    
-                    user_prompt = f"MODALITY: {modality}\nCONTEXT: {MODALITY_INSTRUCTIONS[modality]}\nREF: {reference_text}"
-
-                    messages = [
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": user_prompt},
-                                {
-                                    "type": "image_url",
-                                    "image_url": {
-                                        "url": f"data:image/jpeg;base64,{encoded_image}"
-                                    }
-                                }
-                            ]
-                        }
-                    ]
-
-                    # Using Llama 4 Scout (Current Working Model)
-                    response = client.chat.completions.create(
-                        model="meta-llama/llama-4-scout-17b-16e-instruct",
-                        messages=messages,
-                        temperature=0.1
-                    )
-
-                    st.success("Analysis Complete")
-                    st.markdown("### 📋 Clinical Report")
-                    st.markdown(response.choices[0].message.content)
-                    st.warning("Verify all findings clinically.")
-
-                except Exception as e:
-                    st.error(f"Analysis Error: {e}")
-else:
-    st.info("Please accept the disclaimer to proceed.")
-
-# =========================================================
-# 7. FEEDBACK SECTION
-# =========================================================
 st.divider()
 st.markdown("### 📩 App Feedback")
-st.caption("Found a bug or have a suggestion? Send it directly to Dr. Masood.")
-
-with st.form("feedback_form"):
-    feedback_text = st.text_area("Your message here:")
-    submit_feedback = st.form_submit_button("Send Feedback")
-
-    if submit_feedback:
-        if feedback_text:
-            with st.spinner("Sending email..."):
-                success = send_feedback_email(feedback_text)
-                if success:
-                    st.success("Feedback sent successfully to masoodeye16@gmail.com!")
-        else:
-            st.warning("Please write some text before sending.")
+st.caption("Found a bug
