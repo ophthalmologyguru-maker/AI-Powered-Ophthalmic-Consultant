@@ -1,6 +1,6 @@
 import streamlit as st
 import base64
-import streamlit.components.v1 as components # Required for embedding
+import streamlit.components.v1 as components 
 from groq import Groq
 from PyPDF2 import PdfReader
 
@@ -110,11 +110,10 @@ div.stButton > button {
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 3. API SETUP (Only Groq Needed Now)
+# 3. API SETUP
 # =========================================================
 try:
     api_key = st.secrets["GROQ_API_KEY"]
-    # No Email/Formspree secrets needed anymore!
 except KeyError:
     st.error("Missing Secrets (GROQ_API_KEY). Please check Streamlit Settings.")
     st.stop()
@@ -124,7 +123,6 @@ client = Groq(api_key=api_key)
 # =========================================================
 # 4. FUNCTIONS
 # =========================================================
-
 def encode_image(file):
     return base64.b64encode(file.getvalue()).decode("utf-8")
 
@@ -189,7 +187,7 @@ with col1:
         index=0
     )
 
-# --- RIGHT COLUMN: Upload, Analyze & Feedback ---
+# --- RIGHT COLUMN: Upload, Analyze ---
 with col2:
     st.write(f"### 2. Upload {modality} Scan")
     
@@ -252,19 +250,6 @@ with col2:
                         st.error(f"Analysis Error: {e}")
     else:
         st.info("Please accept the disclaimer to proceed.")
-    
-    # --- GOOGLE FORM FEEDBACK (Embedded) ---
-    st.markdown("---") 
-    st.markdown("### 📩 App Feedback")
-    st.caption("Have a suggestion? Fill out the Google Form below.")
-    
-    # -------------------------------------------------------------
-    # PASTE YOUR GOOGLE FORM LINK BELOW WHERE IT SAYS 'https://docs.google.com/...'
-    # -------------------------------------------------------------
-    google_form_url = "https://docs.google.com/forms/d/e/https://docs.google.com/forms/d/e/https://docs.google.com/forms/d/e/1FAIpQLScbkQQZcFIquditVQdGTHUFCyZu3nXoLzl5DZzM8zpe49GweA/viewform?usp=sharing&ouid=100840841338696716911/viewform?usp=dialog/viewform?embedded=true"
-    
-    # This embeds the form directly inside your app
-    components.iframe(google_form_url, height=500, scrolling=True)
 
 # =========================================================
 # 7. DISPLAY RESULTS (Full Width below columns)
@@ -275,3 +260,18 @@ if 'analysis_result' in st.session_state:
     st.markdown("### 📋 Clinical Report")
     st.markdown(st.session_state['analysis_result'])
     st.warning("Verify all findings clinically.")
+
+# =========================================================
+# 8. FEEDBACK FORM (Embedded)
+# =========================================================
+st.markdown("---") 
+st.markdown("### 📩 App Feedback")
+st.caption("Found a bug or have a suggestion? Send it directly to Dr. Masood Alam Shah.")
+
+# ----------------------------------------------------------------------
+# IMPORTANT: PASTE YOUR GOOGLE FORM LINK BELOW INSIDE THE QUOTES!
+# Make sure it ends with ?embedded=true
+# ----------------------------------------------------------------------
+google_form_url = "https://docs.google.com/forms/d/e/PASTE_YOUR_COPIED_LINK_HERE/viewform?embedded=true"
+
+components.iframe(google_form_url, height=800, scrolling=True)
