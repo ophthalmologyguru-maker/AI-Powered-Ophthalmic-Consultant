@@ -14,11 +14,11 @@ st.set_page_config(
 )
 
 # =========================================================
-# 2. STYLING (Animations & Colors)
+# 2. STYLING (CSS)
 # =========================================================
 st.markdown("""
 <style>
-/* 1. Mobile Padding Fix */
+/* Mobile Padding Fix */
 .block-container {
     padding-top: 1rem;
     padding-bottom: 5rem;
@@ -27,14 +27,14 @@ st.markdown("""
 footer {visibility: hidden;}
 header {visibility: hidden;}
 
-/* 2. Custom Title */
+/* Custom Title */
 h1 {
     text-align: center;
     font-size: 2.2rem !important;
     color: #0e1117;
 }
 
-/* 3. Blinking Animation for Warning Triangle */
+/* Blinking Animation */
 @keyframes blink {
     0% { opacity: 1; }
     50% { opacity: 0; }
@@ -47,7 +47,7 @@ h1 {
     font-size: 1.2rem;
 }
 
-/* 4. Center the Disclaimer Text */
+/* Disclaimer Box */
 .disclaimer-box {
     border: 2px solid #ff4b4b;
     border-radius: 10px;
@@ -61,28 +61,47 @@ h1 {
     max-width: 800px;
 }
 
-/* 5. Vibrant Colors for Radio Buttons */
-div[role="radiogroup"] > label > div:first-child {
-    display: none; 
-}
-div[role="radiogroup"] > label {
-    padding: 12px;
+/* Share Button */
+.share-btn a {
+    text-decoration: none;
+    background-color: #25D366;
+    color: white;
+    padding: 10px 20px;
     border-radius: 8px;
-    margin-bottom: 8px;
     font-weight: bold;
-    color: white !important; /* FORCED WHITE TEXT */
-    transition: transform 0.1s;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-}
-div[role="radiogroup"] > label:hover {
-    transform: scale(1.02);
+    display: inline-block;
+    margin-bottom: 15px;
 }
 
-/* Assigning Specific Vibrant Colors to Each Option */
-div[role="radiogroup"] > label:nth-child(1) { background-color: #FF5733; } /* OCT Macula - Red/Orange */
-div[role="radiogroup"] > label:nth-child(2) { background-color: #33FF57; } /* OCT ONH - Green */
-div[role="radiogroup"] > label:nth-child(3) { background-color: #3357FF; } /* Visual Field - Blue */
-div[role="radiogroup"] > label:nth-child(4) { background-color: #FF33A8; } /* Corneal Topo - Pink */
-div[role="radiogroup"] > label:nth-child(5) { background-color: #FFC300; } /* FFA - Yellow/Gold */
-div[role="radiogroup"] > label:nth-child(6) { background-color: #8E44AD; } /* OCTA - Purple */
-div[role="radiogroup"] > label:nth-child(7) { background-color: #00C3FF; } /* B-Scan - Cyan
+/* Button Styling */
+div.stButton > button {
+    width: 100%;
+    border-radius: 10px;
+    height: 3em;
+    font-weight: bold;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# 3. API SETUP
+# =========================================================
+try:
+    api_key = st.secrets["GROQ_API_KEY"]
+except KeyError:
+    st.error("Missing Secrets (GROQ_API_KEY). Please check Streamlit Settings.")
+    st.stop()
+
+client = Groq(api_key=api_key)
+
+# =========================================================
+# 4. FUNCTIONS
+# =========================================================
+def encode_image(file):
+    return base64.b64encode(file.getvalue()).decode("utf-8")
+
+def load_reference_text(path="REFERNCE.pdf"):
+    try:
+        reader = PdfReader(path)
+        text = ""
+        for i
