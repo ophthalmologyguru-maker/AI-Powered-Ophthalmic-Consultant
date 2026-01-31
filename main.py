@@ -268,10 +268,6 @@ st.markdown("---")
 st.markdown("### 📩 App Feedback")
 st.caption("Found a bug or have a suggestion? Send it directly to Dr. Masood Alam Shah.")
 
-# ----------------------------------------------------------------------
-# IMPORTANT: PASTE YOUR GOOGLE FORM LINK BELOW INSIDE THE QUOTES!
-# Make sure it ends with ?embedded=true
-# ----------------------------------------------------------------------
-google_form_url = "https://docs.google.com/forms/d/e/PASTE_YOUR_COPIED_LINK_HERE/viewform?embedded=true"
+"https://docs.google.com/forms/d/e/https://docs.google.com/forms/d/e/1FAIpQLScbkQQZcFIquditVQdGTHUFCyZu3nXoLzl5DZzM8zpe49GweA/viewform?usp=sharing&ouid=100840841338696716911E/viewform?embedded=true"
 
 components.iframe(google_form_url, height=800, scrolling=True)
