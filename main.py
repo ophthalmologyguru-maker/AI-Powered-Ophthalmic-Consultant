@@ -7,7 +7,7 @@ from PyPDF2 import PdfReader
 # 1. PAGE CONFIGURATION
 # =========================================================
 st.set_page_config(
-    page_title="Zubaida Eye Diagnostics",
+    page_title="Masood Alam Shah Eye Diagnostics",
     layout="centered",
     page_icon="👁️"
 )
@@ -65,7 +65,7 @@ client = Groq(api_key=api_key)
 # =========================================================
 # 4. MAIN INTERFACE
 # =========================================================
-st.title("👁️ Zubaida Eye Diagnostics")
+st.title("👁️ Masood Alam Shah Eye Diagnostics")
 st.markdown("<div style='text-align: center; color: grey; margin-bottom: 20px;'>AI-Powered Ophthalmic Consultant</div>", unsafe_allow_html=True)
 
 st.warning(
@@ -155,7 +155,7 @@ if ack:
         
         if st.button("Analyze Scan", type="primary", use_container_width=True):
             # UPDATED: Generic Spinner Text
-            with st.spinner("Zubaida AI is analyzing..."):
+            with st.spinner("Dr. Masood's AI is analyzing..."):
                 try:
                     encoded_image = encode_image(image_file)
                     reference_text = load_reference_text()
