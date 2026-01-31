@@ -261,7 +261,7 @@ with col2:
     # -------------------------------------------------------------
     # PASTE YOUR GOOGLE FORM LINK BELOW WHERE IT SAYS 'https://docs.google.com/...'
     # -------------------------------------------------------------
-    google_form_url = "https://docs.google.com/forms/d/e/https://docs.google.com/forms/d/e/1FAIpQLScbkQQZcFIquditVQdGTHUFCyZu3nXoLzl5DZzM8zpe49GweA/viewform?usp=dialog/viewform?embedded=true"
+    google_form_url = "https://docs.google.com/forms/d/e/https://docs.google.com/forms/d/e/https://docs.google.com/forms/d/e/1FAIpQLScbkQQZcFIquditVQdGTHUFCyZu3nXoLzl5DZzM8zpe49GweA/viewform?usp=sharing&ouid=100840841338696716911/viewform?usp=dialog/viewform?embedded=true"
     
     # This embeds the form directly inside your app
     components.iframe(google_form_url, height=500, scrolling=True)
