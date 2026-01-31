@@ -96,6 +96,18 @@ div.stButton > button {
     height: 3em;
     font-weight: bold;
 }
+
+/* 7. Share Button Styling */
+.share-btn a {
+    text-decoration: none;
+    background-color: #25D366;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 15px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -107,7 +119,7 @@ try:
     email_user = st.secrets["EMAIL_USER"]
     email_pass = st.secrets["EMAIL_PASSWORD"]
 except KeyError:
-    st.error("Missing Secrets (GROQ_API_KEY, EMAIL_USER, or EMAIL_PASSWORD). Please check Streamlit Settings.")
+    st.error("Missing Secrets. Please check Streamlit Settings.")
     st.stop()
 
 client = Groq(api_key=api_key)
@@ -116,7 +128,11 @@ client = Groq(api_key=api_key)
 # 4. MAIN INTERFACE (HEADER)
 # =========================================================
 st.title("👁️ Masood Alam Shah Eye Diagnostics 🇵🇰")
-st.markdown("<div style='text-align: center; color: grey; margin-bottom: 20px;'>AI-Powered Ophthalmic Assistant</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center; color: grey; margin-bottom: 5px;'>AI-Powered Ophthalmic Assistant</div>", unsafe_allow_html=True)
+
+# SHARE BUTTON (Prominent)
+share_link = "https://wa.me/?text=Check%20out%20Dr.%20Masood's%20Eye%20Diagnostics%20App!"
+st.markdown(f"<div style='text-align: center;'><span class='share-btn'><a href='{share_link}' target='_blank'>📲 Share App on WhatsApp</a></span></div>", unsafe_allow_html=True)
 
 # DISCLAIMER
 st.markdown(
@@ -185,9 +201,103 @@ with col2:
                         except:
                             return ""
 
+                    # SYSTEM PROMPT (Fixed spacing to avoid errors)
                     SYSTEM_PROMPT = """
-                    You are an expert Consultant Ophthalmologist.
-                    Analyze the ophthalmic scan professionally.
-                    STRICT FORMATTING:
-                    **PATIENT DATA:** [Name/ID/Age if visible]
-                    **SCAN QUALITY:**
+You are an expert Consultant Ophthalmologist.
+Analyze the ophthalmic scan professionally.
+STRICT FORMATTING:
+**PATIENT DATA:** [Name/ID/Age if visible]
+**SCAN QUALITY:** [Signal, Artifacts]
+**KEY FINDINGS:** [Bulleted list]
+**QUANTITATIVE ANALYSIS:** [Thickness, Indices]
+**CLINICAL IMPRESSION:** [Diagnosis]
+**MANAGEMENT SUGGESTIONS:** [Next steps]
+"""
+                    
+                    MODALITY_INSTRUCTIONS = {
+                        "OCT Macula": "Focus on: CSMT, Retinal Layers, Fluid, RPE.",
+                        "OCT ONH (Glaucoma)": "Focus on: RNFL, C/D Ratio, ISNT rule.",
+                        "Visual Field (Perimetry)": "Focus on: Reliability, GHT, MD, PSD, Defect pattern.",
+                        "Corneal Topography": "Focus on: K-max, Pachymetry, Elevations.",
+                        "Fluorescein Angiography (FFA)": "Focus on: Phases, Leakage, Ischemia.",
+                        "OCT Angiography (OCTA)": "Focus on: Vascular density, FAZ, Neovascularization.",
+                        "Ultrasound B-Scan": "Focus on: Retinal attachment, Vitreous echoes, Mass."
+                    }
+
+                    try:
+                        encoded_image = encode_image(image_file)
+                        reference_text = load_reference_text()
+                        
+                        user_prompt = f"MODALITY: {modality}\nCONTEXT: {MODALITY_INSTRUCTIONS[modality]}\nREF: {reference_text}"
+
+                        messages = [
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": [
+                                {"type": "text", "text": user_prompt},
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}}
+                            ]}
+                        ]
+
+                        response = client.chat.completions.create(
+                            model="meta-llama/llama-4-scout-17b-16e-instruct",
+                            messages=messages,
+                            temperature=0.1
+                        )
+                        
+                        st.session_state['analysis_result'] = response.choices[0].message.content
+                        
+                    except Exception as e:
+                        st.error(f"Analysis Error: {e}")
+    else:
+        st.info("Please accept the disclaimer to proceed.")
+
+# =========================================================
+# 6. DISPLAY RESULTS
+# =========================================================
+if 'analysis_result' in st.session_state:
+    st.divider()
+    st.success("Analysis Complete")
+    st.markdown("### 📋 Clinical Report")
+    st.markdown(st.session_state['analysis_result'])
+    st.warning("Verify all findings clinically.")
+
+# =========================================================
+# 7. FEEDBACK SECTION
+# =========================================================
+def send_feedback_email(user_feedback):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = email_user
+        msg['To'] = "masoodeye16@gmail.com"
+        msg['Subject'] = "New Feedback: Eye Diagnostics App"
+        body = f"User Feedback:\n\n{user_feedback}"
+        msg.attach(MIMEText(body, 'plain'))
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(email_user, email_pass)
+        text = msg.as_string()
+        server.sendmail(email_user, "masoodeye16@gmail.com", text)
+        server.quit()
+        return True
+    except Exception as e:
+        st.error(f"Email Error: {e}")
+        return False
+
+st.divider()
+st.markdown("### 📩 App Feedback")
+st.caption("Found a bug or have a suggestion? Send it directly to Dr. Masood Alam Shah.")
+
+with st.form("feedback_form"):
+    feedback_text = st.text_area("Your message here:")
+    submit_feedback = st.form_submit_button("Send Feedback")
+
+    if submit_feedback:
+        if feedback_text:
+            with st.spinner("Sending email..."):
+                success = send_feedback_email(feedback_text)
+                if success:
+                    st.success("Feedback sent successfully to masoodeye16@gmail.com!")
+                    st.balloons() 
+                    st.markdown("**Thank you for your valuable feedback! It helps us improve.**")
+        else:
+            st.warning("Please write some text before sending.")
