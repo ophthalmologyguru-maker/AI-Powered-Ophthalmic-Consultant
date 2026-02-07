@@ -279,6 +279,7 @@ st.markdown("---")
 st.markdown("### 📩 App Feedback")
 st.caption("Found a bug or have a suggestion? Send it directly to Dr. Masood Alam Shah.")
 
-google_form_url = "https://docs.google.com/forms/d/e/1FAIpQLScbkQQZcFIquditVQdGTHUFCyZu3nXoLzl5DZzM8zpe49GweA/viewform?embedded=true"
+# Updated Link 
+google_form_url = "https://docs.google.com/forms/d/e/1FAIpQLSeItsM5K0MtBon20jwu1Y1biXucGeRFmo9YOlc5VtbBzY0IZw/viewform?embedded=true"
 
 components.iframe(google_form_url, height=800, scrolling=True)
