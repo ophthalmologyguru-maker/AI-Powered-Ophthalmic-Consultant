@@ -80,6 +80,36 @@ div.stButton > button {
     height: 3em;
     font-weight: bold;
 }
+
+/* Radio Button Styling */
+div[role="radiogroup"] > label > div:first-child {
+    display: none; 
+}
+div[role="radiogroup"] > label {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: white !important; 
+    transition: transform 0.1s;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+div[role="radiogroup"] > label:hover {
+    transform: scale(1.02);
+}
+
+/* Specific Colors for Each Modality */
+div[role="radiogroup"] > label:nth-child(1) { background-color: #FF5733; } /* OCT Macula */
+div[role="radiogroup"] > label:nth-child(2) { background-color: #33FF57; } /* OCT ONH */
+div[role="radiogroup"] > label:nth-child(3) { background-color: #3357FF; } /* Visual Field */
+div[role="radiogroup"] > label:nth-child(4) { background-color: #FF33A8; } /* Corneal Topo */
+div[role="radiogroup"] > label:nth-child(5) { background-color: #FFC300; } /* FFA */
+div[role="radiogroup"] > label:nth-child(6) { background-color: #8E44AD; } /* OCTA */
+div[role="radiogroup"] > label:nth-child(7) { background-color: #00C3FF; } /* B-Scan */
+div[role="radiogroup"] > label:nth-child(8) { background-color: #5D6D7E; } /* ERG - Gray/Blue */
+div[role="radiogroup"] > label:nth-child(9) { background-color: #D35400; } /* VEP - Burnt Orange */
+div[role="radiogroup"] > label:nth-child(10) { background-color: #16A085; } /* EOG - Teal */
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -107,7 +137,7 @@ def load_reference_text(path="REFERNCE.pdf"):
         for i, page in enumerate(reader.pages):
             if i > 50: break
             text += page.extract_text() or ""
-        return text[:5000]
+        return text[:10000] # Increased limit for larger reference
     except:
         return ""
 
@@ -156,7 +186,10 @@ with col1:
             "Corneal Topography",
             "Fluorescein Angiography (FFA)",
             "OCT Angiography (OCTA)",
-            "Ultrasound B-Scan"
+            "Ultrasound B-Scan",
+            "Electroretinogram (ERG)",
+            "Visual Evoked Potential (VEP)",
+            "Electrooculogram (EOG)"
         ],
         index=0
     )
@@ -176,6 +209,7 @@ with col2:
             if st.button("Analyze Scan", type="primary", use_container_width=True):
                 with st.spinner("Dr. Masood Alam Shah's AI is analyzing..."):
                     
+                    # --- UPDATED PROMPT LOGIC ---
                     SYSTEM_PROMPT = """
                     You are an expert Consultant Ophthalmologist.
                     Analyze the ophthalmic scan professionally.
@@ -183,26 +217,29 @@ with col2:
                     **PATIENT DATA:** [Name/ID/Age if visible]
                     **SCAN QUALITY:** [Signal, Artifacts]
                     **KEY FINDINGS:** [Bulleted list]
-                    **QUANTITATIVE ANALYSIS:** [Thickness, Indices]
+                    **QUANTITATIVE ANALYSIS:** [Thickness, Indices, Amplitudes, Latencies]
                     **CLINICAL IMPRESSION:** [Diagnosis]
                     **MANAGEMENT SUGGESTIONS:** [Next steps]
                     """
                     
                     MODALITY_INSTRUCTIONS = {
-                        "OCT Macula": "Focus on: CSMT, Retinal Layers, Fluid, RPE.",
-                        "OCT ONH (Glaucoma)": "Focus on: RNFL, C/D Ratio, ISNT rule.",
-                        "Visual Field (Perimetry)": "Focus on: Reliability, GHT, MD, PSD, Defect pattern.",
-                        "Corneal Topography": "Focus on: K-max, Pachymetry, Elevations.",
-                        "Fluorescein Angiography (FFA)": "Focus on: Phases, Leakage, Ischemia.",
-                        "OCT Angiography (OCTA)": "Focus on: Vascular density, FAZ, Neovascularization.",
-                        "Ultrasound B-Scan": "Focus on: Retinal attachment, Vitreous echoes, Mass."
+                        "OCT Macula": "Focus on: CSMT, Retinal Layers, Fluid (IRF/SRF), RPE, Choroid.",
+                        "OCT ONH (Glaucoma)": "Focus on: RNFL thickness, C/D Ratio, ISNT rule, Disc symmetry.",
+                        "Visual Field (Perimetry)": "Focus on: Reliability (Fixation losses, FN/FP), GHT, MD, PSD, Defect Pattern (Arcuate, Nasal step, etc.).",
+                        "Corneal Topography": "Focus on: K-max, Pachymetry, Anterior/Posterior Elevation, Astigmatism patterns (Bow-tie, Crab claw).",
+                        "Fluorescein Angiography (FFA)": "Focus on: Phases (Arterial, Venous), Hyperfluorescence (Leakage, Pooling, Staining, Window defect), Hypofluorescence (Blocking, Filling defect).",
+                        "OCT Angiography (OCTA)": "Focus on: Vascular density, FAZ (Foveal Avascular Zone), Neovascularization, Ischemia.",
+                        "Ultrasound B-Scan": "Focus on: Vitreous echoes, Retinal attachment, Mass (Reflectivity), Choroidal thickening.",
+                        "Electroretinogram (ERG)": "Focus on: scotopic/photopic responses, a-wave (photoreceptors), b-wave (bipolar/Müller), amplitudes, implicit times.",
+                        "Visual Evoked Potential (VEP)": "Focus on: P100 latency, Amplitude, Inter-eye asymmetry, Morphology.",
+                        "Electrooculogram (EOG)": "Focus on: Arden Ratio (Light peak / Dark trough). Normal > 1.85."
                     }
 
                     try:
                         encoded_image = encode_image(image_file)
                         reference_text = load_reference_text()
                         
-                        user_prompt = f"MODALITY: {modality}\nCONTEXT: {MODALITY_INSTRUCTIONS[modality]}\nREF: {reference_text}"
+                        user_prompt = f"MODALITY: {modality}\nCONTEXT: {MODALITY_INSTRUCTIONS.get(modality, 'Analyze standard ophthalmic image.')}\nREF: {reference_text}"
 
                         messages = [
                             {"role": "system", "content": SYSTEM_PROMPT},
