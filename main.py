@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# 2. STYLING (CSS)
+# 2. STYLING (CSS) - FIXED SELECTION VISIBILITY
 # =========================================================
 st.markdown("""
 <style>
@@ -81,21 +81,44 @@ div.stButton > button {
     font-weight: bold;
 }
 
-/* Radio Button Styling */
+/* --- RADIO BUTTON STYLING (UPDATED) --- */
+
+/* Hide the default circle/dot */
 div[role="radiogroup"] > label > div:first-child {
     display: none; 
 }
+
+/* Base style for ALL buttons (Default State) */
 div[role="radiogroup"] > label {
     padding: 12px;
     border-radius: 8px;
     margin-bottom: 8px;
     font-weight: bold;
     color: white !important; 
-    transition: transform 0.1s;
+    transition: all 0.2s ease-in-out;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    
+    /* NEW: Dim unselected items by default */
+    opacity: 0.5; 
+    transform: scale(0.98);
+    border: 2px solid transparent;
 }
+
+/* Hover Effect */
 div[role="radiogroup"] > label:hover {
-    transform: scale(1.02);
+    opacity: 0.8;
+    transform: scale(1.0);
+    cursor: pointer;
+}
+
+/* SELECTED State (The magic fix) */
+/* This targets the label that contains the checked input */
+div[role="radiogroup"] > label:has(input:checked) {
+    opacity: 1.0;             /* Full Brightness */
+    transform: scale(1.03);   /* Slightly Larger */
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.3); /* Add Shadow */
+    border: 2px solid white;  /* White border highlight */
+    z-index: 10;
 }
 
 /* Specific Colors for Each Modality */
