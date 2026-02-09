@@ -84,6 +84,8 @@ div[role="radiogroup"] > label {
     color: white !important; 
     transition: all 0.2s ease-in-out;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    
+    /* Dim unselected items */
     opacity: 0.5; 
     transform: scale(0.98);
     border: 2px solid transparent;
@@ -98,10 +100,10 @@ div[role="radiogroup"] > label:hover {
 
 /* SELECTED State (Bright & Shadowed) */
 div[role="radiogroup"] > label:has(input:checked) {
-    opacity: 1.0;             
-    transform: scale(1.03);   
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.3); 
-    border: 2px solid white;  
+    opacity: 1.0;             /* Full Brightness */
+    transform: scale(1.03);   /* Slightly Larger */
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.3); /* Add Shadow */
+    border: 2px solid white;  /* White border highlight */
     z-index: 10;
 }
 
@@ -117,6 +119,10 @@ div[role="radiogroup"] label:nth-child(8) { background-color: #5D6D7E; } /* ERG 
 div[role="radiogroup"] label:nth-child(9) { background-color: #D35400; } /* VEP */
 div[role="radiogroup"] label:nth-child(10) { background-color: #16A085; } /* EOG */
 
+/* INPUT METHOD SELECTOR STYLING (The 2nd Radio Group) */
+/* We target the 2nd radio group specifically to make it look different/cleaner if needed */
+/* For now, it will inherit the vibrant button style which is good for visibility */
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -126,33 +132,4 @@ div[role="radiogroup"] label:nth-child(10) { background-color: #16A085; } /* EOG
 try:
     api_key = st.secrets["GROQ_API_KEY"]
 except KeyError:
-    st.error("Missing Secrets (GROQ_API_KEY). Please check Streamlit Settings.")
-    st.stop()
-
-client = Groq(api_key=api_key)
-
-# =========================================================
-# 4. FUNCTIONS
-# =========================================================
-def encode_image(file):
-    return base64.b64encode(file.getvalue()).decode("utf-8")
-
-def load_reference_text(path="REFERNCE.pdf"):
-    try:
-        reader = PdfReader(path)
-        text = ""
-        for i, page in enumerate(reader.pages):
-            if i > 50: break
-            text += page.extract_text() or ""
-        return text[:10000] 
-    except:
-        return ""
-
-# =========================================================
-# 5. MAIN INTERFACE (HEADER)
-# =========================================================
-st.title("👁️ Masood Alam Shah Eye Diagnostics 🇵🇰")
-st.markdown("<div style='text-align: center; color: grey; margin-bottom: 5px;'>AI-Powered Ophthalmic Assistant</div>", unsafe_allow_html=True)
-
-# SHARE BUTTON
-share_link = "
+    st.error("Missing Secrets (GROQ_API_KEY). Please check Streamlit
