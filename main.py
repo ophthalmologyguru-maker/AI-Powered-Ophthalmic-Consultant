@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# 2. STYLING (CSS) - FIXED SELECTION VISIBILITY
+# 2. STYLING (CSS)
 # =========================================================
 st.markdown("""
 <style>
@@ -81,14 +81,13 @@ div.stButton > button {
     font-weight: bold;
 }
 
-/* --- RADIO BUTTON STYLING (UPDATED) --- */
-
-/* Hide the default circle/dot */
+/* --- VISUAL SELECTION FOR BUTTONS --- */
+/* Hide default radio circle */
 div[role="radiogroup"] > label > div:first-child {
     display: none; 
 }
 
-/* Base style for ALL buttons (Default State) */
+/* Base style for buttons */
 div[role="radiogroup"] > label {
     padding: 12px;
     border-radius: 8px;
@@ -98,7 +97,7 @@ div[role="radiogroup"] > label {
     transition: all 0.2s ease-in-out;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
     
-    /* NEW: Dim unselected items by default */
+    /* Dim unselected items */
     opacity: 0.5; 
     transform: scale(0.98);
     border: 2px solid transparent;
@@ -111,8 +110,7 @@ div[role="radiogroup"] > label:hover {
     cursor: pointer;
 }
 
-/* SELECTED State (The magic fix) */
-/* This targets the label that contains the checked input */
+/* SELECTED State (Bright & Shadowed) */
 div[role="radiogroup"] > label:has(input:checked) {
     opacity: 1.0;             /* Full Brightness */
     transform: scale(1.03);   /* Slightly Larger */
@@ -121,17 +119,17 @@ div[role="radiogroup"] > label:has(input:checked) {
     z-index: 10;
 }
 
-/* Specific Colors for Each Modality */
-div[role="radiogroup"] > label:nth-child(1) { background-color: #FF5733; } /* OCT Macula */
-div[role="radiogroup"] > label:nth-child(2) { background-color: #33FF57; } /* OCT ONH */
-div[role="radiogroup"] > label:nth-child(3) { background-color: #3357FF; } /* Visual Field */
-div[role="radiogroup"] > label:nth-child(4) { background-color: #FF33A8; } /* Corneal Topo */
-div[role="radiogroup"] > label:nth-child(5) { background-color: #FFC300; } /* FFA */
-div[role="radiogroup"] > label:nth-child(6) { background-color: #8E44AD; } /* OCTA */
-div[role="radiogroup"] > label:nth-child(7) { background-color: #00C3FF; } /* B-Scan */
-div[role="radiogroup"] > label:nth-child(8) { background-color: #5D6D7E; } /* ERG */
-div[role="radiogroup"] > label:nth-child(9) { background-color: #D35400; } /* VEP */
-div[role="radiogroup"] > label:nth-child(10) { background-color: #16A085; } /* EOG */
+/* Specific Colors for Imaging Types */
+div[role="radiogroup"] label:nth-child(1) { background-color: #FF5733; } /* OCT Macula */
+div[role="radiogroup"] label:nth-child(2) { background-color: #33FF57; } /* OCT ONH */
+div[role="radiogroup"] label:nth-child(3) { background-color: #3357FF; } /* Visual Field */
+div[role="radiogroup"] label:nth-child(4) { background-color: #FF33A8; } /* Corneal Topo */
+div[role="radiogroup"] label:nth-child(5) { background-color: #FFC300; } /* FFA */
+div[role="radiogroup"] label:nth-child(6) { background-color: #8E44AD; } /* OCTA */
+div[role="radiogroup"] label:nth-child(7) { background-color: #00C3FF; } /* B-Scan */
+div[role="radiogroup"] label:nth-child(8) { background-color: #5D6D7E; } /* ERG */
+div[role="radiogroup"] label:nth-child(9) { background-color: #D35400; } /* VEP */
+div[role="radiogroup"] label:nth-child(10) { background-color: #16A085; } /* EOG */
 
 </style>
 """, unsafe_allow_html=True)
@@ -219,25 +217,24 @@ with col1:
 
 # --- RIGHT COLUMN: Upload, Analyze ---
 with col2:
-    st.write(f"### 2. Upload or Capture {modality}")
+    st.write(f"### 2. Upload or Capture")
     
     ack = st.checkbox("✅ I acknowledge the disclaimer above.")
     
     if ack:
-        # TABS FOR UPLOAD VS CAMERA
-        tab1, tab2 = st.tabs(["📁 Upload Image", "📸 Take Photo"])
+        # INPUT METHOD SELECTOR (Clearer than tabs)
+        input_method = st.radio(
+            "Choose how to add image:",
+            ["📂 Upload from Gallery", "📸 Use Camera"],
+            horizontal=True
+        )
         
         image_file = None
         
-        with tab1:
-            uploaded = st.file_uploader("Select from Gallery", type=["jpg", "jpeg", "png"])
-            if uploaded:
-                image_file = uploaded
-        
-        with tab2:
-            camera_photo = st.camera_input("Take a picture")
-            if camera_photo:
-                image_file = camera_photo
+        if input_method == "📂 Upload from Gallery":
+            image_file = st.file_uploader("Select Image", type=["jpg", "jpeg", "png"])
+        else:
+            image_file = st.camera_input("Take a Picture")
 
         # ANALYZE BUTTON LOGIC
         if image_file:
