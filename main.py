@@ -69,7 +69,7 @@ div.stButton > button {
     font-weight: bold;
 }
 
-/* --- RADIO BUTTON STYLING (Scan Type) --- */
+/* --- RADIO BUTTON STYLING --- */
 /* Hide default radio circle */
 div[role="radiogroup"] > label > div:first-child {
     display: none; 
@@ -84,8 +84,6 @@ div[role="radiogroup"] > label {
     color: white !important; 
     transition: all 0.2s ease-in-out;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-    
-    /* Dim unselected items */
     opacity: 0.5; 
     transform: scale(0.98);
     border: 2px solid transparent;
@@ -100,10 +98,10 @@ div[role="radiogroup"] > label:hover {
 
 /* SELECTED State (Bright & Shadowed) */
 div[role="radiogroup"] > label:has(input:checked) {
-    opacity: 1.0;             /* Full Brightness */
-    transform: scale(1.03);   /* Slightly Larger */
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.3); /* Add Shadow */
-    border: 2px solid white;  /* White border highlight */
+    opacity: 1.0;             
+    transform: scale(1.03);   
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.3); 
+    border: 2px solid white;  
     z-index: 10;
 }
 
@@ -119,10 +117,6 @@ div[role="radiogroup"] label:nth-child(8) { background-color: #5D6D7E; } /* ERG 
 div[role="radiogroup"] label:nth-child(9) { background-color: #D35400; } /* VEP */
 div[role="radiogroup"] label:nth-child(10) { background-color: #16A085; } /* EOG */
 
-/* INPUT METHOD SELECTOR STYLING (The 2nd Radio Group) */
-/* We target the 2nd radio group specifically to make it look different/cleaner if needed */
-/* For now, it will inherit the vibrant button style which is good for visibility */
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -132,4 +126,188 @@ div[role="radiogroup"] label:nth-child(10) { background-color: #16A085; } /* EOG
 try:
     api_key = st.secrets["GROQ_API_KEY"]
 except KeyError:
-    st.error("Missing Secrets (GROQ_API_KEY). Please check Streamlit
+    st.error("Missing Secrets (GROQ_API_KEY). Please check Streamlit Settings.")
+    st.stop()
+
+client = Groq(api_key=api_key)
+
+# =========================================================
+# 4. FUNCTIONS
+# =========================================================
+def encode_image(file):
+    return base64.b64encode(file.getvalue()).decode("utf-8")
+
+def load_reference_text(path="REFERNCE.pdf"):
+    try:
+        reader = PdfReader(path)
+        text = ""
+        for i, page in enumerate(reader.pages):
+            if i > 50: break
+            text += page.extract_text() or ""
+        return text[:10000] 
+    except:
+        return ""
+
+# =========================================================
+# 5. MAIN INTERFACE (HEADER)
+# =========================================================
+st.title("👁️ Masood Alam Shah Eye Diagnostics 🇵🇰")
+st.markdown("<div style='text-align: center; color: grey; margin-bottom: 5px;'>AI-Powered Ophthalmic Assistant</div>", unsafe_allow_html=True)
+
+# SHARE BUTTON
+share_link = "https://wa.me/?text=Check%20out%20Dr.%20Masood's%20Eye%20Diagnostics%20App!"
+st.markdown(f"<div style='text-align: center;'><span class='share-btn'><a href='{share_link}' target='_blank'>📲 Share App on WhatsApp</a></span></div>", unsafe_allow_html=True)
+
+# DISCLAIMER
+st.markdown(
+    """
+    <div class="disclaimer-box">
+        <span class="blink-icon">⚠️</span> 
+        <strong>AI MEDICAL DISCLAIMER</strong> 
+        <span class="blink-icon">⚠️</span>
+        <br><br>
+        This tool is for <strong>educational support only</strong> and does not constitute a medical diagnosis. 
+        <br>
+        <strong>Always verify findings with clinical examination.</strong>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
+
+st.divider()
+
+# =========================================================
+# 6. SPLIT LAYOUT (SIDE-BY-SIDE)
+# =========================================================
+col1, col2 = st.columns(2, gap="large")
+
+# --- LEFT COLUMN: Imaging Selection ---
+with col1:
+    st.write("### 1. Select Imaging Type")
+    modality = st.radio(
+        "Tap to select:",
+        [
+            "OCT Macula",
+            "OCT ONH (Glaucoma)",
+            "Visual Field (Perimetry)",
+            "Corneal Topography",
+            "Fluorescein Angiography (FFA)",
+            "OCT Angiography (OCTA)",
+            "Ultrasound B-Scan",
+            "Electroretinogram (ERG)",
+            "Visual Evoked Potential (VEP)",
+            "Electrooculogram (EOG)"
+        ],
+        index=0
+    )
+
+# --- RIGHT COLUMN: Upload, Analyze ---
+with col2:
+    st.write(f"### 2. Upload or Capture")
+    
+    ack = st.checkbox("✅ I acknowledge the disclaimer above.")
+    
+    if ack:
+        # INPUT METHOD SELECTOR
+        st.write("#### Choose Input Method:")
+        input_method = st.radio(
+            "Select one:",
+            ["📂 Upload from Gallery", "📸 Take Photo with Camera"],
+            horizontal=True,
+            label_visibility="collapsed"
+        )
+        
+        image_file = None
+        
+        if input_method == "📂 Upload from Gallery":
+            image_file = st.file_uploader("Select Image", type=["jpg", "jpeg", "png"])
+        else:
+            image_file = st.camera_input("Take a Picture")
+
+        # ANALYZE BUTTON LOGIC
+        if image_file:
+            st.image(image_file, caption="Scan Preview", use_container_width=True)
+            
+            if st.button("Analyze Scan", type="primary", use_container_width=True):
+                with st.spinner("Dr. Masood Alam Shah's AI is analyzing..."):
+                    
+                    # --- SYSTEM PROMPT ---
+                    SYSTEM_PROMPT = """
+                    You are an expert Consultant Ophthalmologist.
+                    Analyze the ophthalmic scan professionally.
+                    STRICT FORMATTING:
+                    **PATIENT DATA:** [Name/ID/Age if visible]
+                    **SCAN QUALITY:** [Signal, Artifacts]
+                    **KEY FINDINGS:** [Bulleted list]
+                    **QUANTITATIVE ANALYSIS:** [Thickness, Indices, Amplitudes, Latencies]
+                    CLINICAL IMPRESSION: [Diagnosis]
+                    **MANAGEMENT SUGGESTIONS:** [Next steps]
+                    """
+                    
+                    MODALITY_INSTRUCTIONS = {
+                        "OCT Macula": "Focus on: CSMT, Retinal Layers, Fluid (IRF/SRF), RPE, Choroid.",
+                        "OCT ONH (Glaucoma)": "Focus on: RNFL thickness, C/D Ratio, ISNT rule, Disc symmetry.",
+                        "Visual Field (Perimetry)": "Focus on: Reliability (Fixation losses, FN/FP), GHT, MD, PSD, Defect Pattern (Arcuate, Nasal step, etc.).",
+                        "Corneal Topography": "Focus on: K-max, Pachymetry, Anterior/Posterior Elevation, Astigmatism patterns (Bow-tie, Crab claw).",
+                        "Fluorescein Angiography (FFA)": "Focus on: Phases (Arterial, Venous), Hyperfluorescence (Leakage, Pooling, Staining, Window defect), Hypofluorescence (Blocking, Filling defect).",
+                        "OCT Angiography (OCTA)": "Focus on: Vascular density, FAZ (Foveal Avascular Zone), Neovascularization, Ischemia.",
+                        "Ultrasound B-Scan": "Focus on: Vitreous echoes, Retinal attachment, Mass (Reflectivity), Choroidal thickening.",
+                        "Electroretinogram (ERG)": "Focus on: scotopic/photopic responses, a-wave (photoreceptors), b-wave (bipolar/Müller), amplitudes, implicit times.",
+                        "Visual Evoked Potential (VEP)": "Focus on: P100 latency, Amplitude, Inter-eye asymmetry, Morphology.",
+                        "Electrooculogram (EOG)": "Focus on: Arden Ratio (Light peak / Dark trough). Normal > 1.85."
+                    }
+
+                    try:
+                        encoded_image = encode_image(image_file)
+                        reference_text = load_reference_text()
+                        
+                        user_prompt = f"MODALITY: {modality}\nCONTEXT: {MODALITY_INSTRUCTIONS.get(modality, 'Analyze standard ophthalmic image.')}\nREF: {reference_text}"
+
+                        messages = [
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": [
+                                {"type": "text", "text": user_prompt},
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}}
+                            ]}
+                        ]
+
+                        response = client.chat.completions.create(
+                            model="meta-llama/llama-4-scout-17b-16e-instruct",
+                            messages=messages,
+                            temperature=0.1
+                        )
+                        
+                        # --- POST-PROCESSING FOR RED DIAGNOSIS ---
+                        raw_result = response.choices[0].message.content
+                        colored_result = raw_result.replace("CLINICAL IMPRESSION:", "#### :red[CLINICAL IMPRESSION:]")
+                        
+                        st.session_state['analysis_result'] = colored_result
+                        
+                    except Exception as e:
+                        st.error(f"Analysis Error: {e}")
+    else:
+        st.info("Please accept the disclaimer to proceed.")
+
+# =========================================================
+# 7. DISPLAY RESULTS
+# =========================================================
+if 'analysis_result' in st.session_state:
+    st.divider()
+    st.success("Analysis Complete")
+    st.markdown("### 📋 Clinical Report")
+    
+    # Displaying the report with the potential RED text
+    st.markdown(st.session_state['analysis_result'])
+    
+    st.warning("Verify all findings clinically.")
+
+# =========================================================
+# 8. FEEDBACK FORM (Embedded)
+# =========================================================
+st.markdown("---") 
+st.markdown("### 📩 App Feedback")
+st.caption("Found a bug or have a suggestion? Send it directly to Dr. Masood Alam Shah.")
+
+google_form_url = "https://docs.google.com/forms/d/e/1FAIpQLSeItsM5K0MtBon20jwu1Y1biXucGeRFmo9YOlc5VtbBzY0IZw/viewform?embedded=true"
+
+components.iframe(google_form_url, height=800, scrolling=True)
