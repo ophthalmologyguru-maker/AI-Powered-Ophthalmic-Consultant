@@ -69,7 +69,7 @@ div.stButton > button {
     font-weight: bold;
 }
 
-/* --- RADIO BUTTON STYLING --- */
+/* --- RADIO BUTTON STYLING (Scan Type) --- */
 /* Hide default radio circle */
 div[role="radiogroup"] > label > div:first-child {
     display: none; 
@@ -117,10 +117,6 @@ div[role="radiogroup"] label:nth-child(8) { background-color: #5D6D7E; } /* ERG 
 div[role="radiogroup"] label:nth-child(9) { background-color: #D35400; } /* VEP */
 div[role="radiogroup"] label:nth-child(10) { background-color: #16A085; } /* EOG */
 
-/* INPUT METHOD SELECTOR STYLING (The 2nd Radio Group) */
-/* We target the 2nd radio group specifically to make it look different/cleaner if needed */
-/* For now, it will inherit the vibrant button style which is good for visibility */
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -159,20 +155,4 @@ st.title("👁️ Masood Alam Shah Eye Diagnostics 🇵🇰")
 st.markdown("<div style='text-align: center; color: grey; margin-bottom: 5px;'>AI-Powered Ophthalmic Assistant</div>", unsafe_allow_html=True)
 
 # SHARE BUTTON
-share_link = "https://wa.me/?text=Check%20out%20Dr.%20Masood's%20Eye%20Diagnostics%20App!"
-st.markdown(f"<div style='text-align: center;'><span class='share-btn'><a href='{share_link}' target='_blank'>📲 Share App on WhatsApp</a></span></div>", unsafe_allow_html=True)
-
-# DISCLAIMER
-st.markdown(
-    """
-    <div class="disclaimer-box">
-        <span class="blink-icon">⚠️</span> 
-        <strong>AI MEDICAL DISCLAIMER</strong> 
-        <span class="blink-icon">⚠️</span>
-        <br><br>
-        This tool is for <strong>educational support only</strong> and does not constitute a medical diagnosis. 
-        <br>
-        <strong>Always verify findings with clinical examination.</strong>
-    </div>
-    """, 
-    unsafe_allow_
+share_link = "
