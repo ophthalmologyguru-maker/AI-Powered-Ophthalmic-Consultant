@@ -106,9 +106,9 @@ div[role="radiogroup"] > label:nth-child(4) { background-color: #FF33A8; } /* Co
 div[role="radiogroup"] > label:nth-child(5) { background-color: #FFC300; } /* FFA */
 div[role="radiogroup"] > label:nth-child(6) { background-color: #8E44AD; } /* OCTA */
 div[role="radiogroup"] > label:nth-child(7) { background-color: #00C3FF; } /* B-Scan */
-div[role="radiogroup"] > label:nth-child(8) { background-color: #5D6D7E; } /* ERG - Gray/Blue */
-div[role="radiogroup"] > label:nth-child(9) { background-color: #D35400; } /* VEP - Burnt Orange */
-div[role="radiogroup"] > label:nth-child(10) { background-color: #16A085; } /* EOG - Teal */
+div[role="radiogroup"] > label:nth-child(8) { background-color: #5D6D7E; } /* ERG */
+div[role="radiogroup"] > label:nth-child(9) { background-color: #D35400; } /* VEP */
+div[role="radiogroup"] > label:nth-child(10) { background-color: #16A085; } /* EOG */
 
 </style>
 """, unsafe_allow_html=True)
@@ -137,7 +137,7 @@ def load_reference_text(path="REFERNCE.pdf"):
         for i, page in enumerate(reader.pages):
             if i > 50: break
             text += page.extract_text() or ""
-        return text[:10000] # Increased limit for larger reference
+        return text[:10000] 
     except:
         return ""
 
@@ -196,20 +196,34 @@ with col1:
 
 # --- RIGHT COLUMN: Upload, Analyze ---
 with col2:
-    st.write(f"### 2. Upload {modality} Scan")
+    st.write(f"### 2. Upload or Capture {modality}")
     
     ack = st.checkbox("✅ I acknowledge the disclaimer above.")
     
     if ack:
-        image_file = st.file_uploader("Tap to select image", type=["jpg", "jpeg", "png"])
+        # TABS FOR UPLOAD VS CAMERA
+        tab1, tab2 = st.tabs(["📁 Upload Image", "📸 Take Photo"])
+        
+        image_file = None
+        
+        with tab1:
+            uploaded = st.file_uploader("Select from Gallery", type=["jpg", "jpeg", "png"])
+            if uploaded:
+                image_file = uploaded
+        
+        with tab2:
+            camera_photo = st.camera_input("Take a picture")
+            if camera_photo:
+                image_file = camera_photo
 
+        # ANALYZE BUTTON LOGIC
         if image_file:
             st.image(image_file, caption="Scan Preview", use_container_width=True)
             
             if st.button("Analyze Scan", type="primary", use_container_width=True):
                 with st.spinner("Dr. Masood Alam Shah's AI is analyzing..."):
                     
-                    # --- UPDATED PROMPT LOGIC ---
+                    # --- SYSTEM PROMPT ---
                     SYSTEM_PROMPT = """
                     You are an expert Consultant Ophthalmologist.
                     Analyze the ophthalmic scan professionally.
@@ -279,7 +293,6 @@ st.markdown("---")
 st.markdown("### 📩 App Feedback")
 st.caption("Found a bug or have a suggestion? Send it directly to Dr. Masood Alam Shah.")
 
-# Updated Link 
 google_form_url = "https://docs.google.com/forms/d/e/1FAIpQLSeItsM5K0MtBon20jwu1Y1biXucGeRFmo9YOlc5VtbBzY0IZw/viewform?embedded=true"
 
 components.iframe(google_form_url, height=800, scrolling=True)
