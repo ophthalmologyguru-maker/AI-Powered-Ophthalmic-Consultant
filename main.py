@@ -154,8 +154,8 @@ def load_reference_text(path="REFERNCE.pdf"):
 st.title("👁️ Masood Alam Shah Eye Diagnostics 🇵🇰")
 st.markdown("<div style='text-align: center; color: grey; margin-bottom: 5px;'>AI-Powered Ophthalmic Assistant</div>", unsafe_allow_html=True)
 
-# SHARE BUTTON
-share_link = "https://wa.me/?text=Check%20out%20Dr.%20Masood's%20Eye%20Diagnostics%20App!"
+# SHARE BUTTON (UPDATED WITH FULL NAME AND LINK)
+share_link = "https://wa.me/?text=Check%20out%20Dr.%20Masood%20Alam%20Shah%27s%20Eye%20Diagnostics%20App%3A%20https%3A%2F%2Fmasoodalamshah.streamlit.app"
 st.markdown(f"<div style='text-align: center;'><span class='share-btn'><a href='{share_link}' target='_blank'>📲 Share App on WhatsApp</a></span></div>", unsafe_allow_html=True)
 
 # DISCLAIMER
@@ -208,7 +208,7 @@ with col2:
     ack = st.checkbox("✅ I acknowledge the disclaimer above.")
     
     if ack:
-        # File uploader only (Camera removed as requested)
+        # File uploader only
         image_file = st.file_uploader("📂 Upload from Gallery", type=["jpg", "jpeg", "png"])
 
         # ANALYZE BUTTON LOGIC
@@ -223,78 +223,4 @@ with col2:
                     You are an expert Consultant Ophthalmologist.
                     Analyze the ophthalmic scan professionally.
                     STRICT FORMATTING:
-                    **PATIENT DATA:** [Name/ID/Age if visible]
-                    **SCAN QUALITY:** [Signal, Artifacts]
-                    **KEY FINDINGS:** [Bulleted list]
-                    **QUANTITATIVE ANALYSIS:** [Thickness, Indices, Amplitudes, Latencies]
-                    **CLINICAL IMPRESSION:** [Diagnosis MUST be written in **ALL CAPS AND BOLD**, e.g., **DIABETIC MACULAR EDEMA**]
-                    **MANAGEMENT SUGGESTIONS:** [Next steps]
-                    """
-                    
-                    MODALITY_INSTRUCTIONS = {
-                        "OCT Macula": "Focus on: CSMT, Retinal Layers, Fluid (IRF/SRF), RPE, Choroid.",
-                        "OCT ONH (Glaucoma)": "Focus on: RNFL thickness, C/D Ratio, ISNT rule, Disc symmetry.",
-                        "Visual Field (Perimetry)": "Focus on: Reliability (Fixation losses, FN/FP), GHT, MD, PSD, Defect Pattern (Arcuate, Nasal step, etc.).",
-                        "Corneal Topography": "Focus on: K-max, Pachymetry, Anterior/Posterior Elevation, Astigmatism patterns (Bow-tie, Crab claw).",
-                        "Fluorescein Angiography (FFA)": "Focus on: Phases (Arterial, Venous), Hyperfluorescence (Leakage, Pooling, Staining, Window defect), Hypofluorescence (Blocking, Filling defect).",
-                        "OCT Angiography (OCTA)": "Focus on: Vascular density, FAZ (Foveal Avascular Zone), Neovascularization, Ischemia.",
-                        "Ultrasound B-Scan": "Focus on: Vitreous echoes, Retinal attachment, Mass (Reflectivity), Choroidal thickening.",
-                        "Electroretinogram (ERG)": "Focus on: scotopic/photopic responses, a-wave (photoreceptors), b-wave (bipolar/Müller), amplitudes, implicit times.",
-                        "Visual Evoked Potential (VEP)": "Focus on: P100 latency, Amplitude, Inter-eye asymmetry, Morphology.",
-                        "Electrooculogram (EOG)": "Focus on: Arden Ratio (Light peak / Dark trough). Normal > 1.85."
-                    }
-
-                    try:
-                        encoded_image = encode_image(image_file)
-                        reference_text = load_reference_text()
-                        
-                        user_prompt = f"MODALITY: {modality}\nCONTEXT: {MODALITY_INSTRUCTIONS.get(modality, 'Analyze standard ophthalmic image.')}\nREF: {reference_text}"
-
-                        messages = [
-                            {"role": "system", "content": SYSTEM_PROMPT},
-                            {"role": "user", "content": [
-                                {"type": "text", "text": user_prompt},
-                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}}
-                            ]}
-                        ]
-
-                        response = client.chat.completions.create(
-                            model="meta-llama/llama-4-scout-17b-16e-instruct",
-                            messages=messages,
-                            temperature=0.1
-                        )
-                        
-                        # --- POST-PROCESSING FOR RED DIAGNOSIS HEADING ---
-                        raw_result = response.choices[0].message.content
-                        colored_result = raw_result.replace("**CLINICAL IMPRESSION:**", "### :red[**CLINICAL IMPRESSION:**]")
-                        
-                        st.session_state['analysis_result'] = colored_result
-                        
-                    except Exception as e:
-                        st.error(f"Analysis Error: {e}")
-    else:
-        st.info("Please accept the disclaimer to proceed.")
-
-# =========================================================
-# 7. DISPLAY RESULTS
-# =========================================================
-if 'analysis_result' in st.session_state:
-    st.divider()
-    st.success("Analysis Complete")
-    st.markdown("### 📋 Clinical Report")
-    
-    # Displaying the report
-    st.markdown(st.session_state['analysis_result'])
-    
-    st.warning("Verify all findings clinically.")
-
-# =========================================================
-# 8. FEEDBACK FORM (Embedded)
-# =========================================================
-st.markdown("---") 
-st.markdown("### 📩 App Feedback")
-st.caption("Found a bug or have a suggestion? Send it directly to Dr. Masood Alam Shah.")
-
-google_form_url = "https://docs.google.com/forms/d/e/1FAIpQLSeItsM5K0MtBon20jwu1Y1biXucGeRFmo9YOlc5VtbBzY0IZw/viewform?embedded=true"
-
-components.iframe(google_form_url, height=800, scrolling=True)
+                    **PATIENT DATA:**
