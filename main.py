@@ -203,26 +203,13 @@ with col1:
 
 # --- RIGHT COLUMN: Upload, Analyze ---
 with col2:
-    st.write(f"### 2. Upload or Capture")
+    st.write(f"### 2. Upload Scan")
     
     ack = st.checkbox("✅ I acknowledge the disclaimer above.")
     
     if ack:
-        # INPUT METHOD SELECTOR
-        st.write("#### Choose Input Method:")
-        input_method = st.radio(
-            "Select one:",
-            ["📂 Upload from Gallery", "📸 Take Photo with Camera"],
-            horizontal=True,
-            label_visibility="collapsed"
-        )
-        
-        image_file = None
-        
-        if input_method == "📂 Upload from Gallery":
-            image_file = st.file_uploader("Select Image", type=["jpg", "jpeg", "png"])
-        else:
-            image_file = st.camera_input("Take a Picture")
+        # File uploader only (Camera removed as requested)
+        image_file = st.file_uploader("📂 Upload from Gallery", type=["jpg", "jpeg", "png"])
 
         # ANALYZE BUTTON LOGIC
         if image_file:
@@ -240,7 +227,7 @@ with col2:
                     **SCAN QUALITY:** [Signal, Artifacts]
                     **KEY FINDINGS:** [Bulleted list]
                     **QUANTITATIVE ANALYSIS:** [Thickness, Indices, Amplitudes, Latencies]
-                    CLINICAL IMPRESSION: [Diagnosis]
+                    **CLINICAL IMPRESSION:** [Diagnosis MUST be written in **ALL CAPS AND BOLD**, e.g., **DIABETIC MACULAR EDEMA**]
                     **MANAGEMENT SUGGESTIONS:** [Next steps]
                     """
                     
@@ -277,9 +264,9 @@ with col2:
                             temperature=0.1
                         )
                         
-                        # --- POST-PROCESSING FOR RED DIAGNOSIS ---
+                        # --- POST-PROCESSING FOR RED DIAGNOSIS HEADING ---
                         raw_result = response.choices[0].message.content
-                        colored_result = raw_result.replace("CLINICAL IMPRESSION:", "#### :red[CLINICAL IMPRESSION:]")
+                        colored_result = raw_result.replace("**CLINICAL IMPRESSION:**", "### :red[**CLINICAL IMPRESSION:**]")
                         
                         st.session_state['analysis_result'] = colored_result
                         
@@ -296,7 +283,7 @@ if 'analysis_result' in st.session_state:
     st.success("Analysis Complete")
     st.markdown("### 📋 Clinical Report")
     
-    # Displaying the report with the potential RED text
+    # Displaying the report
     st.markdown(st.session_state['analysis_result'])
     
     st.warning("Verify all findings clinically.")
