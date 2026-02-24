@@ -252,4 +252,49 @@ with col2:
 
                         messages = [
                             {"role": "system", "content": SYSTEM_PROMPT},
-                            {"role": "user", "content":
+                            {"role": "user", "content": [
+                                {"type": "text", "text": user_prompt},
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}}
+                            ]}
+                        ]
+
+                        response = client.chat.completions.create(
+                            model="meta-llama/llama-4-scout-17b-16e-instruct",
+                            messages=messages,
+                            temperature=0.1
+                        )
+                        
+                        # --- POST-PROCESSING FOR RED DIAGNOSIS HEADING ---
+                        raw_result = response.choices[0].message.content
+                        colored_result = raw_result.replace("**CLINICAL IMPRESSION:**", "### :red[**CLINICAL IMPRESSION:**]")
+                        
+                        st.session_state['analysis_result'] = colored_result
+                        
+                    except Exception as e:
+                        st.error(f"Analysis Error: {e}")
+    else:
+        st.info("Please accept the disclaimer to proceed.")
+
+# =========================================================
+# 7. DISPLAY RESULTS
+# =========================================================
+if 'analysis_result' in st.session_state:
+    st.divider()
+    st.success("Analysis Complete")
+    st.markdown("### 📋 Clinical Report")
+    
+    # Displaying the report
+    st.markdown(st.session_state['analysis_result'])
+    
+    st.warning("Verify all findings clinically.")
+
+# =========================================================
+# 8. FEEDBACK FORM (Embedded)
+# =========================================================
+st.markdown("---") 
+st.markdown("### 📩 App Feedback")
+st.caption("Found a bug or have a suggestion? Send it directly to Dr. Masood Alam Shah.")
+
+google_form_url = "https://docs.google.com/forms/d/e/1FAIpQLSeItsM5K0MtBon20jwu1Y1biXucGeRFmo9YOlc5VtbBzY0IZw/viewform?embedded=true"
+
+components.iframe(google_form_url, height=800, scrolling=True)
