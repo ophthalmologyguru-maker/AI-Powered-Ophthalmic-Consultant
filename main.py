@@ -208,24 +208,28 @@ with col2:
     ack = st.checkbox("✅ I acknowledge the disclaimer above.")
     
     if ack:
-        # File uploader only
-        image_file = st.file_uploader("📂 Upload from Gallery", type=["jpg", "jpeg", "png"])
+        # File uploader now accepts MULTIPLE files
+        uploaded_files = st.file_uploader("📂 Upload from Gallery (Select multiple scans if needed)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
         # ANALYZE BUTTON LOGIC
-        if image_file:
-            st.image(image_file, caption="Scan Preview", use_container_width=True)
+        if uploaded_files:
+            # Display all uploaded images dynamically in columns
+            cols = st.columns(len(uploaded_files))
+            for i, file in enumerate(uploaded_files):
+                cols[i].image(file, caption=f"Scan {i+1}", use_container_width=True)
             
-            if st.button("Analyze Scan", type="primary", use_container_width=True):
+            if st.button("Analyze Scans", type="primary", use_container_width=True):
                 with st.spinner("Dr. Masood Alam Shah's AI is analyzing..."):
                     
                     # --- SYSTEM PROMPT ---
                     SYSTEM_PROMPT = """
                     You are an expert Consultant Ophthalmologist.
-                    Analyze the ophthalmic scan professionally.
+                    Analyze the ophthalmic scan(s) professionally. 
+                    If multiple images are provided, synthesize them into a single comprehensive diagnostic report.
                     STRICT FORMATTING:
                     **PATIENT DATA:** [Name/ID/Age if visible]
                     **SCAN QUALITY:** [Signal, Artifacts]
-                    **KEY FINDINGS:** [Bulleted list]
+                    **KEY FINDINGS:** [Bulleted list summarizing findings across all provided images]
                     **QUANTITATIVE ANALYSIS:** [Thickness, Indices, Amplitudes, Latencies]
                     **CLINICAL IMPRESSION:** [Diagnosis MUST be written in **ALL CAPS AND BOLD**, e.g., **DIABETIC MACULAR EDEMA**]
                     **MANAGEMENT SUGGESTIONS:** [Next steps]
@@ -245,17 +249,22 @@ with col2:
                     }
 
                     try:
-                        encoded_image = encode_image(image_file)
                         reference_text = load_reference_text()
-                        
                         user_prompt = f"MODALITY: {modality}\nCONTEXT: {MODALITY_INSTRUCTIONS.get(modality, 'Analyze standard ophthalmic image.')}\nREF: {reference_text}"
+
+                        # Build the content array with the text prompt and ALL uploaded images
+                        user_content = [{"type": "text", "text": user_prompt}]
+                        
+                        for file in uploaded_files:
+                            encoded_image = encode_image(file)
+                            user_content.append({
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}
+                            })
 
                         messages = [
                             {"role": "system", "content": SYSTEM_PROMPT},
-                            {"role": "user", "content": [
-                                {"type": "text", "text": user_prompt},
-                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}}
-                            ]}
+                            {"role": "user", "content": user_content}
                         ]
 
                         response = client.chat.completions.create(
