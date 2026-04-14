@@ -148,7 +148,7 @@ def load_reference_text(path="REFERNCE.pdf"):
         for i, page in enumerate(reader.pages):
             if i > 50: break
             text += page.extract_text() or ""
-        return text[:10000] 
+        return text[:6000] 
     except:
         return ""
 
