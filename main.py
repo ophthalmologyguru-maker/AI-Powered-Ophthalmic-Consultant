@@ -1,7 +1,7 @@
 import streamlit as st
 import base64
 import streamlit.components.v1 as components 
-from groq import Groq
+import anthropic
 from PyPDF2 import PdfReader
 
 # =========================================================
@@ -70,12 +70,10 @@ div.stButton > button {
 }
 
 /* --- RADIO BUTTON STYLING --- */
-/* Hide default radio circle */
 div[role="radiogroup"] > label > div:first-child {
     display: none; 
 }
 
-/* Base style for buttons */
 div[role="radiogroup"] > label {
     padding: 12px;
     border-radius: 8px;
@@ -89,14 +87,12 @@ div[role="radiogroup"] > label {
     border: 2px solid transparent;
 }
 
-/* Hover Effect */
 div[role="radiogroup"] > label:hover {
     opacity: 0.8;
     transform: scale(1.0);
     cursor: pointer;
 }
 
-/* SELECTED State (Bright & Shadowed) */
 div[role="radiogroup"] > label:has(input:checked) {
     opacity: 1.0;             
     transform: scale(1.03);   
@@ -121,21 +117,29 @@ div[role="radiogroup"] label:nth-child(10) { background-color: #16A085; } /* EOG
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 3. API SETUP
+# 3. API SETUP (CLAUDE)
 # =========================================================
 try:
-    api_key = st.secrets["GROQ_API_KEY"]
+    api_key = st.secrets["ANTHROPIC_API_KEY"]
 except KeyError:
-    st.error("Missing Secrets (GROQ_API_KEY). Please check Streamlit Settings.")
+    st.error("Missing Secrets (ANTHROPIC_API_KEY). Please check Streamlit Settings.")
     st.stop()
 
-client = Groq(api_key=api_key)
+client = anthropic.Anthropic(api_key=api_key)
 
 # =========================================================
 # 4. FUNCTIONS
 # =========================================================
 def encode_image(file):
     return base64.b64encode(file.getvalue()).decode("utf-8")
+
+def get_media_type(file):
+    # Claude needs to know if it's a jpeg or png
+    if file.type:
+        return file.type
+    elif file.name.lower().endswith("png"):
+        return "image/png"
+    return "image/jpeg"
 
 def load_reference_text(path="REFERNCE.pdf"):
     try:
@@ -154,7 +158,7 @@ def load_reference_text(path="REFERNCE.pdf"):
 st.title("👁️ Masood Alam Shah Eye Diagnostics 🇵🇰")
 st.markdown("<div style='text-align: center; color: grey; margin-bottom: 5px;'>AI-Powered Ophthalmic Assistant</div>", unsafe_allow_html=True)
 
-# SHARE BUTTON (UPDATED WITH FULL NAME AND LINK)
+# SHARE BUTTON
 share_link = "https://wa.me/?text=Check%20out%20Dr.%20Masood%20Alam%20Shah%27s%20Eye%20Diagnostics%20App%3A%20https%3A%2F%2Fmasoodalamshah.streamlit.app"
 st.markdown(f"<div style='text-align: center;'><span class='share-btn'><a href='{share_link}' target='_blank'>📲 Share App on WhatsApp</a></span></div>", unsafe_allow_html=True)
 
@@ -208,12 +212,9 @@ with col2:
     ack = st.checkbox("✅ I acknowledge the disclaimer above.")
     
     if ack:
-        # File uploader now accepts MULTIPLE files
         uploaded_files = st.file_uploader("📂 Upload from Gallery (Select multiple scans if needed)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
-        # ANALYZE BUTTON LOGIC
         if uploaded_files:
-            # Display all uploaded images dynamically in columns
             cols = st.columns(len(uploaded_files))
             for i, file in enumerate(uploaded_files):
                 cols[i].image(file, caption=f"Scan {i+1}", use_container_width=True)
@@ -252,29 +253,39 @@ with col2:
                         reference_text = load_reference_text()
                         user_prompt = f"MODALITY: {modality}\nCONTEXT: {MODALITY_INSTRUCTIONS.get(modality, 'Analyze standard ophthalmic image.')}\nREF: {reference_text}"
 
-                        # Build the content array with the text prompt and ALL uploaded images
-                        user_content = [{"type": "text", "text": user_prompt}]
+                        # Build the payload for Claude
+                        user_content = []
                         
+                        # 1. Add all images first
                         for file in uploaded_files:
                             encoded_image = encode_image(file)
+                            media_type = get_media_type(file)
+                            
                             user_content.append({
-                                "type": "image_url",
-                                "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": media_type,
+                                    "data": encoded_image
+                                }
                             })
+                            
+                        # 2. Add the text prompt at the end
+                        user_content.append({"type": "text", "text": user_prompt})
 
-                        messages = [
-                            {"role": "system", "content": SYSTEM_PROMPT},
-                            {"role": "user", "content": user_content}
-                        ]
-
-                        response = client.chat.completions.create(
-                            model="meta-llama/llama-4-scout-17b-16e-instruct",
-                            messages=messages,
-                            temperature=0.1
+                        # Call Claude API
+                        response = client.messages.create(
+                            model="claude-3-5-sonnet-20241022",
+                            max_tokens=1500,
+                            temperature=0.1,
+                            system=SYSTEM_PROMPT,
+                            messages=[
+                                {"role": "user", "content": user_content}
+                            ]
                         )
                         
-                        # --- POST-PROCESSING FOR RED DIAGNOSIS HEADING ---
-                        raw_result = response.choices[0].message.content
+                        # --- POST-PROCESSING ---
+                        raw_result = response.content[0].text
                         colored_result = raw_result.replace("**CLINICAL IMPRESSION:**", "### :red[**CLINICAL IMPRESSION:**]")
                         
                         st.session_state['analysis_result'] = colored_result
@@ -292,7 +303,6 @@ if 'analysis_result' in st.session_state:
     st.success("Analysis Complete")
     st.markdown("### 📋 Clinical Report")
     
-    # Displaying the report
     st.markdown(st.session_state['analysis_result'])
     
     st.warning("Verify all findings clinically.")
